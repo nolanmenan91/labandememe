@@ -1,0 +1,1166 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Press+Start+2P&family=VT323&display=swap');
+
+:root {
+  /* Retro Typography */
+  --font-press-start: 'Press Start 2P', monospace;
+  --font-vt323: 'VT323', monospace;
+
+  /* Default GBC/Pokémon Dialogue Box Palette (Light Mode) */
+  --bg: #f3f3f3;
+  --text: #000000;
+  --text-h: #000000;
+  --border: #000000;
+  --code-bg: #e0e0e0;
+  --social-bg: #e0e0e0;
+  
+  --accent: #306230; /* DMG dark green */
+  --accent-bg: #8bac0f; /* DMG light green */
+  --accent-border: #306230;
+  
+  --shadow: 6px 6px 0px 0px #000000;
+
+  --sans: var(--font-vt323);
+  --heading: var(--font-press-start);
+  --mono: var(--font-press-start);
+
+  /* Retro Dialog Box specific colors */
+  --retro-box-bg: #ffffff;
+  --retro-box-border: #000000;
+  --retro-box-shadow: inset 0 0 0 4px #ffffff, inset 0 0 0 8px #000000;
+
+  font-family: var(--sans);
+  font-size: 22px; /* VT323 reads better at slightly larger font-size */
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg);
+  
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Dark Mode - Retro Arcade / Pokémon Dark Theme */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121212;
+    --text: #ffffff;
+    --text-h: #ffffff;
+    --border: #ffffff;
+    --code-bg: #262626;
+    --social-bg: #262626;
+    
+    --accent: #8bac0f;
+    --accent-bg: #306230;
+    --accent-border: #8bac0f;
+    
+    --shadow: 6px 6px 0px 0px #ffffff;
+    
+    --retro-box-bg: #1a1a1a;
+    --retro-box-border: #ffffff;
+    --retro-box-shadow: inset 0 0 0 4px #1a1a1a, inset 0 0 0 8px #ffffff;
+  }
+}
+
+/* --- THEMES --- */
+
+/* Classic DMG-01 Game Boy Green Theme */
+.theme-dmg {
+  --bg: #9bbc0f;
+  --text: #0f380f;
+  --text-h: #0f380f;
+  --border: #0f380f;
+  --code-bg: #8bac0f;
+  --social-bg: #8bac0f;
+  --accent: #306230;
+  --accent-bg: #8bac0f;
+  --accent-border: #306230;
+  --shadow: 6px 6px 0px 0px #0f380f;
+  --retro-box-bg: #8bac0f;
+  --retro-box-border: #0f380f;
+  --retro-box-shadow: inset 0 0 0 4px #8bac0f, inset 0 0 0 8px #0f380f;
+}
+
+/* Pokémon GBC Red Version Theme */
+.theme-red {
+  --bg: #fff5f5;
+  --text: #000000;
+  --text-h: #c21a1a;
+  --border: #000000;
+  --code-bg: #ffd1d1;
+  --social-bg: #ffd1d1;
+  --accent: #c21a1a;
+  --accent-bg: #ffb3b3;
+  --accent-border: #c21a1a;
+  --shadow: 6px 6px 0px 0px #c21a1a;
+}
+
+/* Pokémon GBC Blue Version Theme */
+.theme-blue {
+  --bg: #f5f5ff;
+  --text: #000000;
+  --text-h: #1a4bc2;
+  --border: #000000;
+  --code-bg: #d1d9ff;
+  --social-bg: #d1d9ff;
+  --accent: #1a4bc2;
+  --accent-bg: #b3c2ff;
+  --accent-border: #1a4bc2;
+  --shadow: 6px 6px 0px 0px #1a4bc2;
+}
+
+/* Pokémon GBC Yellow Version Theme */
+.theme-yellow {
+  --bg: #fffff0;
+  --text: #000000;
+  --text-h: #bda200;
+  --border: #000000;
+  --code-bg: #fff6bd;
+  --social-bg: #fff6bd;
+  --accent: #bda200;
+  --accent-bg: #ffea85;
+  --accent-border: #bda200;
+  --shadow: 6px 6px 0px 0px #000000;
+}
+
+/* Pok\u00e9mon Blue & Black Version Theme (Default) */
+.theme-blueblack {
+  --bg: #070b19;
+  --text: #cbd5e1;
+  --text-h: #60a5fa;
+  --border: #3b82f6;
+  --code-bg: #0f172a;
+  --social-bg: #0f172a;
+  --accent: #3b82f6;
+  --accent-bg: #1e3a5f;
+  --accent-border: #60a5fa;
+  --shadow: 6px 6px 0px 0px #1e40af;
+  --retro-box-bg: #0d1a2e;
+  --retro-box-border: #3b82f6;
+  --retro-box-shadow: inset 0 0 0 4px #0d1a2e, inset 0 0 0 8px #3b82f6;
+}
+
+.theme-blueblack .retro-input {
+  background-color: #0d1a2e;
+  color: #cbd5e1;
+}
+
+.theme-blueblack .retro-input:focus {
+  background-color: #0f172a;
+  border-color: #60a5fa;
+  box-shadow: inset 3px 3px 0px 0px rgba(0, 0, 0, 0.4), 0 0 0 4px #1e3a5f;
+}
+
+/* Pure Midnight Black Theme */
+.theme-black {
+  --bg: #000000;
+  --text: #e5e5e5;
+  --text-h: #ffffff;
+  --border: #333333;
+  --code-bg: #121212;
+  --social-bg: #121212;
+  --accent: #ffffff;
+  --accent-bg: #1c1c1c;
+  --accent-border: #444444;
+  --shadow: 6px 6px 0px 0px #333333;
+  --retro-box-bg: #0a0a0a;
+  --retro-box-border: #333333;
+  --retro-box-shadow: inset 0 0 0 4px #0a0a0a, inset 0 0 0 8px #333333;
+}
+
+.theme-black .retro-input {
+  background-color: #0a0a0a;
+  color: #e5e5e5;
+}
+
+.theme-black .retro-input:focus {
+  background-color: #121212;
+  border-color: #ffffff;
+  box-shadow: inset 3px 3px 0px 0px rgba(0, 0, 0, 0.4), 0 0 0 4px #262626;
+}
+
+/* --- BASE STYLES --- */
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background-color: var(--bg);
+  color: var(--text);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+#root {
+  width: 960px;
+  max-width: 100%;
+  margin: 40px auto;
+  text-align: center;
+  border: 4px solid var(--border);
+  box-shadow: 8px 8px 0px 0px var(--border);
+  background-color: var(--bg);
+  min-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  position: relative;
+  transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+@media (max-width: 1024px) {
+  #root {
+    margin: 0;
+    width: 100%;
+    min-height: 100vh;
+    border: none;
+    box-shadow: none;
+  }
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--heading);
+  font-weight: normal;
+  color: var(--text-h);
+  text-transform: uppercase;
+}
+
+h1 {
+  font-size: 24px;
+  line-height: 1.5;
+  letter-spacing: -0.5px;
+  margin: 24px 0;
+}
+
+@media (max-width: 1024px) {
+  h1 {
+    font-size: 18px;
+    margin: 16px 0;
+  }
+}
+
+h2 {
+  font-size: 16px;
+  line-height: 1.4;
+  margin: 0 0 12px;
+}
+
+@media (max-width: 1024px) {
+  h2 {
+    font-size: 14px;
+  }
+}
+
+p {
+  margin: 0 0 16px;
+}
+
+code {
+  font-family: var(--font-press-start);
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 4px 8px;
+  background: var(--code-bg);
+  border: 2px solid var(--border);
+  display: inline-block;
+}
+
+/* --- REUSABLE RETRO STYLES --- */
+
+/* Classic Dialogue Box */
+.retro-box {
+  position: relative;
+  background-color: var(--retro-box-bg);
+  border: 6px solid var(--retro-box-border);
+  box-shadow: var(--retro-box-shadow);
+  padding: 24px;
+  color: var(--text);
+  font-family: var(--font-vt323);
+  font-size: 22px;
+  box-sizing: border-box;
+  text-align: left;
+  border-radius: 0px;
+}
+
+.retro-box-title {
+  position: absolute;
+  top: -14px;
+  left: 20px;
+  background-color: var(--retro-box-bg);
+  border: 4px solid var(--retro-box-border);
+  padding: 2px 10px;
+  font-family: var(--font-press-start);
+  font-size: 10px;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--text-h);
+  z-index: 10;
+}
+
+@keyframes retro-blink {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+.retro-box-cursor {
+  position: absolute;
+  bottom: 12px;
+  right: 20px;
+  font-size: 12px;
+  font-family: var(--font-press-start);
+  animation: retro-blink 0.8s steps(2, start) infinite;
+  user-select: none;
+  color: var(--text);
+}
+
+/* Pixel Buttons */
+.retro-btn {
+  font-family: var(--font-press-start);
+  font-size: 12px;
+  color: var(--text);
+  background-color: var(--bg);
+  border: 4px solid var(--border);
+  padding: 12px 18px;
+  cursor: pointer;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  outline: none;
+  user-select: none;
+  box-shadow: var(--shadow);
+  transform: translate(0, 0);
+  text-transform: uppercase;
+  border-radius: 0px;
+  font-weight: normal;
+  transition: background-color 0.1s ease;
+}
+
+.retro-btn:hover:not(:disabled) {
+  background-color: var(--code-bg);
+}
+
+.retro-btn:active:not(:disabled) {
+  box-shadow: 0px 0px 0px 0px var(--border);
+  transform: translate(6px, 6px);
+}
+
+.retro-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+.retro-btn:focus-visible {
+  outline: 4px dotted var(--border);
+  outline-offset: 4px;
+}
+
+/* Pixel Inputs */
+.retro-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.retro-input-label {
+  font-family: var(--font-press-start);
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-h);
+}
+
+.retro-input {
+  font-family: var(--font-vt323);
+  font-size: 22px;
+  color: var(--text);
+  background-color: var(--retro-box-bg);
+  border: 4px solid var(--border);
+  padding: 10px 14px;
+  outline: none;
+  border-radius: 0px;
+  box-shadow: inset 3px 3px 0px 0px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.retro-input:focus {
+  background-color: var(--retro-box-bg);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: inset 3px 3px 0px 0px rgba(0, 0, 0, 0.25), 0 0 0 4px var(--accent-bg);
+}
+
+.retro-input-error {
+  font-family: var(--font-press-start);
+  font-size: 10px;
+  color: #c21a1a;
+  margin-top: 4px;
+}
+
+/* Header & Panels */
+.retro-header-container {
+  border-bottom: 6px double var(--border);
+  padding: 20px 24px;
+  background-color: var(--retro-box-bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .retro-header-container {
+    flex-direction: column;
+    text-align: center;
+    padding: 16px;
+  }
+}
+
+.retro-header-title-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+@media (max-width: 768px) {
+  .retro-header-title-section {
+    align-items: center;
+  }
+}
+
+.retro-header-title {
+  margin: 0;
+  font-size: 20px;
+}
+
+.retro-header-subtitle {
+  font-family: var(--font-vt323);
+  font-size: 18px;
+  color: var(--accent);
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.retro-header-nav {
+  display: flex;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .retro-header-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+/* --- OVERLAYS (CRT & SCANLINES) --- */
+
+.scanlines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.08) 50%
+  );
+  background-size: 100% 4px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+@keyframes crt-flicker {
+  0% { opacity: 0.99; }
+  50% { opacity: 1; }
+  100% { opacity: 0.99; }
+}
+
+.crt-flicker {
+  animation: crt-flicker 0.2s infinite;
+}
+
+.crt-vignette {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.15);
+  z-index: 9998;
+  pointer-events: none;
+}
+
+/* --- RETRO GRID SYSTEM --- */
+.retro-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+/* --- ANIMATIONS (STEP-BASED) --- */
+@keyframes retro-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.retro-bounce {
+  animation: retro-bounce 0.6s steps(4, end) infinite;
+}
+
+/* --- MOBILE RESPONSIVENESS (GRIDS) --- */
+@media (max-width: 768px) {
+  .editor-grid, .game-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* --- MINIMALIST DESIGN LAYOUT OVERRIDES --- */
+
+/* Apply modern font and reset all-caps to everything under design-minimalist */
+.design-minimalist,
+.design-minimalist input,
+.design-minimalist button,
+.design-minimalist select,
+.design-minimalist textarea,
+.design-minimalist p,
+.design-minimalist span,
+.design-minimalist h1,
+.design-minimalist h2,
+.design-minimalist h3,
+.design-minimalist h4,
+.design-minimalist h5,
+.design-minimalist h6,
+.design-minimalist div,
+.design-minimalist label,
+.design-minimalist a {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif !important;
+}
+
+.design-minimalist h1,
+.design-minimalist h2,
+.design-minimalist h3,
+.design-minimalist h4,
+.design-minimalist h5,
+.design-minimalist h6 {
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-weight: 600 !important;
+}
+
+/* Specific styling for the root container in minimalist mode */
+#root.design-minimalist {
+  border: 1px solid var(--accent-border) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15) !important;
+  padding: 24px !important;
+  margin: 40px auto !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Custom background adjustments for dark/light themes in minimalist root */
+body.design-minimalist.theme-blueblack #root {
+  background: rgba(7, 11, 25, 0.95) !important;
+}
+
+body.design-minimalist.theme-default #root,
+body.design-minimalist.theme-dmg #root,
+body.design-minimalist.theme-yellow #root {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Hide CRT overlays and retro scanlines in minimalist design */
+.design-minimalist .scanlines,
+.design-minimalist .crt-flicker,
+.design-minimalist .crt-vignette {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+/* Minimalist Box (Card) Styling */
+.design-minimalist .retro-box {
+  background-color: var(--retro-box-bg) !important;
+  border: 1px solid var(--accent-border) !important;
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05) !important;
+  border-radius: 14px !important;
+  padding: 24px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+}
+
+/* Specific inner shadows override */
+.design-minimalist .retro-box::after,
+.design-minimalist .retro-box::before {
+  box-shadow: none !important;
+}
+
+.design-minimalist .retro-box {
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Remove retro double border shadow */
+.design-minimalist .retro-box {
+  --retro-box-shadow: none !important;
+}
+
+.design-minimalist .retro-box-title {
+  position: absolute !important;
+  top: -12px !important;
+  left: 20px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border: 1px solid var(--accent-border) !important;
+  border-radius: 12px !important;
+  padding: 2px 10px !important;
+  background-color: var(--retro-box-bg) !important;
+  color: var(--accent) !important;
+}
+
+.design-minimalist .retro-box-cursor {
+  display: none !important; /* Hide Pokémon blinking dialogue arrow */
+}
+
+/* Minimalist Button Styling */
+.design-minimalist .retro-btn {
+  border: 1px solid var(--accent-border) !important;
+  background-color: var(--accent-bg) !important;
+  color: var(--text) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  padding: 10px 18px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+  transform: none !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.02em !important;
+}
+
+.design-minimalist .retro-btn::after {
+  display: none !important;
+}
+
+/* Hover and active states for buttons */
+.design-minimalist .retro-btn:hover:not(:disabled) {
+  background-color: var(--accent) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12) !important;
+  transform: translateY(-1px) !important;
+}
+
+.design-minimalist .retro-btn:active:not(:disabled) {
+  transform: translateY(1px) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.design-minimalist .retro-btn:disabled {
+  opacity: 0.4 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Minimalist Inputs */
+.design-minimalist .retro-input {
+  border: 1px solid var(--accent-border) !important;
+  background-color: var(--retro-box-bg) !important;
+  color: var(--text) !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  font-size: 15px !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.design-minimalist .retro-input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15) !important;
+}
+
+/* Adapt focus ring glow colors based on theme if needed */
+body.design-minimalist.theme-red .retro-input:focus {
+  box-shadow: 0 0 0 3px rgba(194, 26, 26, 0.15) !important;
+}
+body.design-minimalist.theme-dmg .retro-input:focus {
+  box-shadow: 0 0 0 3px rgba(48, 98, 48, 0.15) !important;
+}
+body.design-minimalist.theme-black .retro-input:focus {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15) !important;
+}
+
+.design-minimalist .retro-input-label {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.02em !important;
+  color: var(--accent) !important;
+}
+
+/* Header & Panels */
+.design-minimalist .retro-header-container {
+  border-bottom: 1px solid var(--accent-border) !important;
+  background-color: var(--retro-box-bg) !important;
+  border-top-left-radius: 20px !important;
+  border-top-right-radius: 20px !important;
+  padding: 16px 24px !important;
+}
+
+.design-minimalist .retro-header-title {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  color: var(--text-h) !important;
+  margin: 0 !important;
+}
+
+.design-minimalist .retro-header-subtitle {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--accent) !important;
+  letter-spacing: 0.05em !important;
+  margin: 0 !important;
+}
+
+/* Avatar styling */
+.design-minimalist .oak-avatar-img {
+  border-radius: 50% !important;
+  border: 2px solid var(--accent-border) !important;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1) !important;
+}
+
+.design-minimalist .oak-badge {
+  border-radius: 12px !important;
+  border: 1px solid var(--accent-border) !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+  font-weight: 600 !important;
+  background-color: var(--retro-box-bg) !important;
+  font-size: 9px !important;
+}
+
+/* Speech Bubble pointers in minimalist */
+.design-minimalist .retro-speech-bubble::before,
+.design-minimalist .retro-speech-bubble::after {
+  display: none !important; /* Hide retro pointers */
+}
+
+.design-minimalist .retro-speech-bubble .retro-box {
+  border-radius: 14px !important;
+  border: 1px solid var(--accent-border) !important;
+}
+
+/* Navigation items in header */
+.design-minimalist .retro-header-nav .retro-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--text) !important;
+  border-radius: 20px !important;
+  font-weight: 500 !important;
+  padding: 6px 12px !important;
+  font-size: 11px !important;
+}
+
+.design-minimalist .retro-header-nav .retro-btn.active {
+  background-color: var(--accent-bg) !important;
+  color: var(--text-h) !important;
+  border: 1px solid var(--accent-border) !important;
+}
+
+.design-minimalist .retro-header-nav .retro-btn:hover:not(.active) {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+body.design-minimalist.theme-default .retro-header-nav .retro-btn:hover:not(.active),
+body.design-minimalist.theme-red .retro-header-nav .retro-btn:hover:not(.active),
+body.design-minimalist.theme-blue .retro-header-nav .retro-btn:hover:not(.active),
+body.design-minimalist.theme-yellow .retro-header-nav .retro-btn:hover:not(.active) {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Code block adjustments */
+.design-minimalist code,
+.design-minimalist pre {
+  border: 1px solid var(--accent-border) !important;
+  border-radius: 6px !important;
+  padding: 2px 6px !important;
+  font-family: 'Fira Code', 'Courier New', Courier, monospace !important;
+  font-size: 11px !important;
+}
+
+/* Trainer summary avatar */
+.design-minimalist img[alt="Avatar"] {
+  border-radius: 10px !important;
+  border: 1px solid var(--accent-border) !important;
+}
+
+/* The divider double borders inside app */
+.design-minimalist #next-steps,
+.design-minimalist #spacer {
+  border-top: 1px solid var(--accent-border) !important;
+}
+
+.design-minimalist #docs {
+  border-right: 1px solid var(--accent-border) !important;
+}
+
+@media (max-width: 1024px) {
+  .design-minimalist #docs {
+    border-right: none !important;
+    border-bottom: 1px solid var(--accent-border) !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GLASS DESIGN MODE OVERRIDES — inspired by compta project
+   ══════════════════════════════════════════════════════════════ */
+
+/* Clean dark background for Glass mode body */
+body.design-glass {
+  background-color: #05050a !important;
+  background-image: radial-gradient(circle at 50% 0%, rgba(20, 20, 35, 0.6) 0%, transparent 60%),
+                    radial-gradient(circle at 100% 100%, rgba(10, 10, 20, 0.5) 0%, transparent 50%) !important;
+  background-attachment: fixed !important;
+}
+
+/* Apply modern font and reset uppercase under design-glass */
+.design-glass,
+.design-glass input,
+.design-glass button,
+.design-glass select,
+.design-glass textarea,
+.design-glass p,
+.design-glass span,
+.design-glass h1,
+.design-glass h2,
+.design-glass h3,
+.design-glass h4,
+.design-glass h5,
+.design-glass h6,
+.design-glass div,
+.design-glass label,
+.design-glass a {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif !important;
+}
+
+.design-glass h1,
+.design-glass h2,
+.design-glass h3,
+.design-glass h4,
+.design-glass h5,
+.design-glass h6 {
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-weight: 700 !important;
+}
+
+/* Hide CRT and scanlines in glass mode */
+.design-glass .scanlines,
+.design-glass .crt-flicker,
+.design-glass .crt-vignette {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+/* Root container as a premium liquid glass panel */
+#root.design-glass {
+  background: rgba(10, 10, 15, 0.45) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.8) !important;
+  backdrop-filter: blur(24px) saturate(1.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 24px !important;
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 30px 100px rgba(0, 0, 0, 0.8) !important;
+  padding: 24px !important;
+  margin: 40px auto !important;
+  box-sizing: border-box !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@media (max-width: 1024px) {
+  #root.design-glass {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    min-height: 100vh !important;
+    background: rgba(5, 5, 8, 0.95) !important;
+  }
+}
+
+/* Glassmorphic Cards (retro-box in glass mode) */
+.design-glass .retro-box {
+  background: rgba(10, 10, 15, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  -webkit-backdrop-filter: blur(40px) !important;
+  backdrop-filter: blur(40px) !important;
+  border-radius: 16px !important;
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 15px 35px rgba(0, 0, 0, 0.4) !important;
+  padding: 24px !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  position: relative !important;
+}
+
+.design-glass .retro-box::after,
+.design-glass .retro-box::before {
+  box-shadow: none !important;
+}
+
+/* Override inner double-border variable */
+.design-glass .retro-box {
+  --retro-box-shadow: none !important;
+  --retro-box-border: transparent !important;
+}
+
+/* Card Badge Title */
+.design-glass .retro-box-title {
+  position: absolute !important;
+  top: -12px !important;
+  left: 20px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  padding: 2px 10px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  backdrop-filter: blur(10px) !important;
+  color: var(--accent) !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
+}
+
+.design-glass .retro-box-cursor {
+  display: none !important;
+}
+
+/* Premium Apple-style Glass Buttons */
+.design-glass .retro-btn {
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 10px 18px !important;
+  border-radius: 12px !important;
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  transform: none !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.02em !important;
+}
+
+.design-glass .retro-btn::after {
+  display: none !important;
+}
+
+/* Hover and active states for glass buttons */
+.design-glass .retro-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  box-shadow: 
+    0 12px 30px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(255, 255, 255, 0.05) !important;
+  transform: translateY(-1px) !important;
+}
+
+.design-glass .retro-btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.97) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+.design-glass .retro-btn:disabled {
+  opacity: 0.35 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Glass Form Inputs */
+.design-glass .retro-input {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: #ffffff !important;
+  border-radius: 10px !important;
+  padding: 10px 14px !important;
+  font-size: 15px !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.design-glass .retro-input:focus {
+  border-color: var(--accent) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 
+    0 0 0 4px rgba(255, 255, 255, 0.06),
+    0 0 15px color-mix(in srgb, var(--accent) 30%, transparent) !important;
+}
+
+.design-glass .retro-input-label {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  color: var(--accent) !important;
+}
+
+/* Glass Header Panel */
+.design-glass .retro-header-container {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.01) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  backdrop-filter: blur(10px) !important;
+  border-top-left-radius: 24px !important;
+  border-top-right-radius: 24px !important;
+  padding: 16px 24px !important;
+}
+
+.design-glass .retro-header-title {
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  text-shadow: 0 0 20px color-mix(in srgb, var(--accent) 40%, transparent) !important;
+  margin: 0 !important;
+}
+
+.design-glass .retro-header-subtitle {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--accent) !important;
+  letter-spacing: 0.08em !important;
+  margin: 0 !important;
+}
+
+/* Trainer summary avatar in glass mode */
+.design-glass img[alt="Avatar"],
+.design-glass .oak-avatar-img {
+  border-radius: 50% !important;
+  border: 2px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  padding: 2px !important;
+}
+
+.design-glass .oak-badge {
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
+  font-weight: 600 !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  font-size: 9px !important;
+  color: var(--text-h) !important;
+}
+
+/* speech bubbles override */
+.design-glass .retro-speech-bubble::before,
+.design-glass .retro-speech-bubble::after {
+  display: none !important;
+}
+
+.design-glass .retro-speech-bubble .retro-box {
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Header nav bar */
+.design-glass .retro-header-nav .retro-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  border-radius: 20px !important;
+  font-weight: 600 !important;
+  padding: 8px 16px !important;
+  font-size: 11px !important;
+}
+
+.design-glass .retro-header-nav .retro-btn.active {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.design-glass .retro-header-nav .retro-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #ffffff !important;
+}
+
+/* Custom cards content style tweaks */
+.design-glass code {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 6px !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  color: #e5e5e5 !important;
+  font-family: 'Fira Code', 'Courier New', Courier, monospace !important;
+}
+
+.design-glass .editor-grid,
+.design-glass .game-grid {
+  gap: 20px !important;
+}
+
+/* Theme accent definitions for glows in glass mode */
+.theme-blueblack {
+  --accent-glow: rgba(59, 130, 246, 0.3);
+}
+.theme-blue {
+  --accent-glow: rgba(26, 75, 194, 0.3);
+}
+.theme-red {
+  --accent-glow: rgba(194, 26, 26, 0.3);
+}
+.theme-yellow {
+  --accent-glow: rgba(234, 179, 8, 0.25);
+}
+.theme-dmg {
+  --accent-glow: rgba(48, 98, 48, 0.3);
+}
+.theme-black {
+  --accent-glow: rgba(255, 255, 255, 0.15);
+}
+
+/* Scrollbar styling for glass mode */
+.design-glass ::-webkit-scrollbar {
+  width: 6px;
+}
+.design-glass ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+.design-glass ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+.design-glass ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Divider overrides */
+.design-glass #next-steps,
+.design-glass #spacer {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.design-glass #docs {
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+@media (max-width: 1024px) {
+  .design-glass #docs {
+    border-right: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+}
+
