@@ -190,6 +190,17 @@ export const joinOrCreateGlobalLobby = async (profileId) => {
 
       if (resetError) throw resetError
 
+      // Also clean up any stale memes and votes from the abandoned game
+      const { data: staleMemes } = await supabase
+        .from('memes')
+        .select('id')
+        .eq('lobby_id', lobby.id)
+      if (staleMemes && staleMemes.length > 0) {
+        const staleMemeIds = staleMemes.map(m => m.id)
+        await supabase.from('votes').delete().in('meme_id', staleMemeIds)
+        await supabase.from('memes').delete().eq('lobby_id', lobby.id)
+      }
+
       // Refetch the lobby state
       const { data: refetchedLobby, error: refetchError } = await supabase
         .from('lobbies')

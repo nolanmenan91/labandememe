@@ -425,6 +425,7 @@ function getTextZoneDisplayStyle(zone, fontSize = '12px') {
 export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'default' }) {
   const { user, profile, isAdmin } = useAuth()
   const [phase, setPhase] = useState('writing') // writing, voting, results, ended
+  const phaseRef = useRef('writing') // Ref copy of phase for use in closures
   const [currentImage, setCurrentImage] = useState(null)
   const [countdown, setCountdown] = useState(lobby.writing_duration || 60)
   const [textInputs, setTextInputs] = useState({})
@@ -822,6 +823,14 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
   const channelRef = useRef(null)
   const timerRef = useRef(null)
   const hostInitializedRef = useRef(false)
+  const currentRoundPayloadRef = useRef(null) // Stores last START_ROUND payload for late-joiner recovery
+  const hasReceivedRoundRef = useRef(false) // True once a START_ROUND broadcast has been received
+  const transitioningRef = useRef(false) // Guard against double transitionToVoting calls
+
+  // Keep phaseRef in sync with phase state so closures always see the current phase
+  useEffect(() => {
+    phaseRef.current = phase
+  }, [phase])
 
   const fetchPlayers = async () => {
     try {
@@ -848,6 +857,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
 
     channel
       .on('broadcast', { event: 'START_ROUND' }, ({ payload }) => {
+        hasReceivedRoundRef.current = true // Mark that we received this round's broadcast
         setPhase('writing')
         // Change #2: unique template per player
         if (payload.playerImages && payload.playerImages[user.id]) {
@@ -865,6 +875,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
         setMyVotes({})
         setMyPokeballMemeId(null)
         setSubmittedPlayers(new Set()) // Reset submission tracking
+        transitioningRef.current = false // Reset transition guard for new round
         // Change #3: set allTemplates and reset swaps
         setAllTemplates(payload.allTemplates || [])
         setSwapsLeft(payload.swapLimit || lobby.swap_limit || 3)
@@ -881,6 +892,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
         setCountdown(payload.countdown)
       })
       .on('broadcast', { event: 'START_VOTING' }, ({ payload }) => {
+        hasReceivedRoundRef.current = false // Reset round tracker for next round
         setPhase('voting')
         setAllMemes(payload.memes)
         setCurrentMemeIndex(0)
@@ -979,40 +991,74 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
               voting_mode: payload.new.voting_mode ?? 'buttons',
             })
             if (payload.new.status === 'voting') {
-              setPhase((prevPhase) => {
-                if (prevPhase === 'writing') {
-                  setLoading(true)
-                  getLobbyMemes(lobby.id).then(async (memes) => {
-                    let settings = {}
-                    try {
-                      settings = await getLobbySettings(lobby.id)
-                    } catch (e) {}
-                    const votingDuration = settings.voting_duration || lobby.voting_duration || 15
-                    setAllMemes(memes)
-                    setCurrentMemeIndex(0)
-                    setCountdown(votingDuration)
-                    setMyVotes({})
-                    setMyPokeballMemeId(null)
-                    setLoading(false)
-                  }).catch(err => {
-                    console.error(err)
-                    setLoading(false)
+              if (phaseRef.current === 'writing') {
+                hasReceivedRoundRef.current = false // Reset round tracker for next round
+                setPhase('voting')
+                setLoading(true)
+                getLobbyMemes(lobby.id).then(async (memes) => {
+                  let settings = {}
+                  try {
+                    settings = await getLobbySettings(lobby.id)
+                  } catch (e) {}
+                  const votingDuration = settings.voting_duration || lobby.voting_duration || 15
+                  setAllMemes(memes)
+                  setCurrentMemeIndex(0)
+                  setCountdown(votingDuration)
+                  setMyVotes({})
+                  setMyPokeballMemeId(null)
+                  setLoading(false)
+                }).catch(err => {
+                  console.error(err)
+                  setLoading(false)
+                })
+              }
+            }
+
+            if (payload.new.status === 'writing') {
+              hasReceivedRoundRef.current = false
+              setTimeout(() => {
+                if (phaseRef.current !== 'writing') {
+                  channelRef.current.send({
+                    type: 'broadcast',
+                    event: 'REQUEST_ROUND_STATE',
+                    payload: { requesterId: user.id },
                   })
-                  return 'voting'
                 }
-                return prevPhase
-              })
+              }, 1500)
             }
           }
         }
       )
+      .on('broadcast', { event: 'REQUEST_ROUND_STATE' }, async () => {
+        // A client is requesting the current round state because they missed START_ROUND
+        // Only the host responds, and only during the writing phase (not during voting/results)
+        if (!isHostRef.current && !isAdmin) return
+        if (phaseRef.current !== 'writing') return // Don't re-emit if game has moved on
+        try {
+          // Re-send the cached round payload if available (preserves correct player→image mapping)
+          if (currentRoundPayloadRef.current) {
+            channelRef.current.send({
+              type: 'broadcast',
+              event: 'START_ROUND',
+              payload: currentRoundPayloadRef.current,
+            })
+          }
+        } catch (e) {
+          console.error('Failed to respond to REQUEST_ROUND_STATE:', e)
+        }
+      })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED' && !hostInitializedRef.current) {
           // We'll check host after players load
+          // Increased delay to 1500ms to give all clients time to subscribe before broadcast
           setTimeout(async () => {
             const plyrs = await getLobbyPlayers(lobby.id)
             setPlayers(plyrs)
-            const amIHost = lobby.creator_id === user.id
+            const adminPlayers = plyrs.filter(p => p.profiles?.role === 'creator')
+            const amIHost = adminPlayers.length > 0 
+              ? adminPlayers.some(p => p.profile_id === user.id)
+              : lobby.creator_id === user.id
+
             if (amIHost && !hostInitializedRef.current) {
               hostInitializedRef.current = true
               setHostState(true)
@@ -1041,8 +1087,26 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                   console.error('Failed to resume voting loop on host reconnect:', e)
                 }
               }
+            } else if (!amIHost) {
+              // Non-host client: if lobby is already in an active game phase (writing/voting),
+              // request the current round state from the host (we may have missed the broadcast).
+              // This covers both the first round (current_round === 0) and subsequent rounds.
+              if (lobby.status === 'writing' || lobby.status === 'voting') {
+                // Wait 4s to give host enough time to complete startNewRound (several DB calls)
+                setTimeout(() => {
+                  // Only request if we still haven't received a START_ROUND broadcast
+                  // (prevents resetting players who are already creating their mème)
+                  if (!hasReceivedRoundRef.current) {
+                    channelRef.current.send({
+                      type: 'broadcast',
+                      event: 'REQUEST_ROUND_STATE',
+                      payload: { requesterId: user.id },
+                    })
+                  }
+                }, 4000)
+              }
             }
-          }, 500)
+          }, 1500)
         }
       })
 
@@ -1097,18 +1161,21 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
       })
 
       // Broadcast round start to all players
+      const roundPayload = {
+        playerImages,
+        image: shuffledTemplates[0], // fallback for spectators
+        duration: writingDuration,
+        allTemplates: templates,
+        swapLimit,
+        roundNumber: newRound,
+        votingMode,
+      }
+      // Cache the payload so late-joining clients can request it
+      currentRoundPayloadRef.current = roundPayload
       channelRef.current.send({
         type: 'broadcast',
         event: 'START_ROUND',
-        payload: {
-          playerImages,
-          image: shuffledTemplates[0], // fallback for spectators
-          duration: writingDuration,
-          allTemplates: templates,
-          swapLimit,
-          roundNumber: newRound,
-          votingMode,
-        },
+        payload: roundPayload,
       })
 
       // Run writing timer
@@ -1144,6 +1211,8 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
 
   async function transitionToVoting() {
     if (!isHostRef.current && !isAdmin) return
+    if (transitioningRef.current) return // Prevent double calls (timer + auto-submit overlap)
+    transitioningRef.current = true
     setLoading(true)
     try {
       if (timerRef.current) clearInterval(timerRef.current)
@@ -1179,6 +1248,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
     } catch (err) {
       console.error(err)
       setErrorMsg('Erreur lors du passage aux votes.')
+      transitioningRef.current = false
       setLoading(false)
     }
   }
@@ -1376,6 +1446,9 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
   const handleRestartLobby = async () => {
     if (!isHostRef.current && !isAdmin) return
     try {
+      // Clear all memes and votes from the finished game
+      await clearLobbyMemesAndVotes(lobby.id)
+
       // Update status back to lobby
       await updateLobbyStatus(lobby.id, 'lobby')
 
@@ -1551,7 +1624,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
 
   const isSpectating = !currentImage
 
-  if (loading && phase === 'writing' && !isSpectating) {
+  if (loading && phase === 'writing') {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
         <p style={{ fontFamily: 'var(--font-press-start)' }}>MANCHE EN COURS DE Lancement...</p>
