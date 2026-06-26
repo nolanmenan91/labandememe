@@ -17,7 +17,7 @@ export default function Lobby({ lobby, onLeave, onGameStart, onLobbyUpdate, them
   const [isKicked, setIsKicked] = useState(false)
 
   const channelRef = useRef(null)
-  const chatEndRef = useRef(null)
+  const chatContainerRef = useRef(null)
 
   // Local settings state, synced from lobby prop and realtime updates
   const [settings, setSettings] = useState({
@@ -28,10 +28,10 @@ export default function Lobby({ lobby, onLeave, onGameStart, onLobbyUpdate, them
     voting_mode: lobby.voting_mode || 'buttons',
   })
 
-  // Auto-scroll chat to bottom
+  // Auto-scroll chat container to bottom without scrolling the whole page
   useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
     }
   }, [chatMessages])
 
@@ -613,6 +613,7 @@ export default function Lobby({ lobby, onLeave, onGameStart, onLobbyUpdate, them
           <div style={{ display: 'flex', flexDirection: 'column', height: '280px' }}>
             {/* Messages list */}
             <div 
+              ref={chatContainerRef}
               style={{ 
                 flex: 1, 
                 overflowY: 'auto', 
@@ -672,7 +673,6 @@ export default function Lobby({ lobby, onLeave, onGameStart, onLobbyUpdate, them
                   )
                 })
               )}
-              <div ref={chatEndRef} />
             </div>
 
             {/* Input Form */}

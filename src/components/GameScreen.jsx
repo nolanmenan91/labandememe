@@ -2621,14 +2621,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                   <RetroBox
                     title={
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {allMemes[currentMemeIndex].profiles?.avatar_url && (
-                          <img
-                            src={allMemes[currentMemeIndex].profiles.avatar_url}
-                            alt=""
-                            style={{ width: '20px', height: '20px', imageRendering: 'pixelated' }}
-                          />
-                        )}
-                        <span>MEME DE: {allMemes[currentMemeIndex].profiles?.username?.toUpperCase() || 'ANONYME'}</span>
+                        <span>MEME EN COMPÉTITION</span>
                       </div>
                     }
                     theme={theme}
