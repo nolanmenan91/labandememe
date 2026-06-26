@@ -13,22 +13,27 @@ import {
   recordGameResults,
   recordRoundWinners,
   recordRoundVotes,
+  saveWinningMemeToHallOfFame,
 } from '../services/db'
 import { RetroBox, RetroButton, RetroInput } from './retro'
 
 // ── Inline DB helpers (since we cannot modify db.js) ─────────────────────────
 async function clearLobbyMemesAndVotes(lobbyId) {
-  // Delete votes for memes in this lobby first
-  const { data: memes } = await supabase
-    .from('memes')
-    .select('id')
-    .eq('lobby_id', lobbyId)
-  if (memes && memes.length > 0) {
-    const memeIds = memes.map(m => m.id)
-    await supabase.from('votes').delete().in('meme_id', memeIds)
+  const { error } = await supabase.rpc('clear_lobby_memes_and_votes', { p_lobby_id: lobbyId })
+  if (error) {
+    console.warn('RPC clear_lobby_memes_and_votes failed, falling back to client delete:', error)
+    // Delete votes for memes in this lobby first
+    const { data: memes } = await supabase
+      .from('memes')
+      .select('id')
+      .eq('lobby_id', lobbyId)
+    if (memes && memes.length > 0) {
+      const memeIds = memes.map(m => m.id)
+      await supabase.from('votes').delete().in('meme_id', memeIds)
+    }
+    // Then delete the memes
+    await supabase.from('memes').delete().eq('lobby_id', lobbyId)
   }
-  // Then delete the memes
-  await supabase.from('memes').delete().eq('lobby_id', lobbyId)
 }
 
 async function updateLobbyRound(lobbyId, roundNumber) {
@@ -64,8 +69,12 @@ function dynamicFontSize(text, baseSize) {
 }
 
 // ── SVG Speech Bubble rendered on top of a meme image ───────────────────────
-function SpeechBubble({ zone, text, inputMode = false, onInputChange, onDragStart, onResizeStart }) {
+function SpeechBubble({ zone, text, inputMode = false, onInputChange, onDragStart, onResizeStart, sizeMultiplier }) {
   const { x, y, width, height, bubbleTail = 'bottom-left' } = zone
+  const multiplier = sizeMultiplier || zone.fontSizeMultiplier || 1
+  const textLengthScale = Math.max(0.6, 1 - Math.floor((text || '').length / 12) * 0.08)
+  const bubbleFontSize = `max(9px, calc(${width} * 0.0833 * ${textLengthScale} * ${multiplier}cqw))`
+
   return (
     <div style={{
       position: 'absolute',
@@ -103,7 +112,7 @@ function SpeechBubble({ zone, text, inputMode = false, onInputChange, onDragStar
             textAlign: 'center',
             fontFamily: "'Impact', 'Arial Black', sans-serif",
             fontWeight: 'bold',
-            fontSize: `${dynamicFontSize(text, 14)}px`,
+            fontSize: bubbleFontSize,
             color: '#000',
             outline: 'none',
             cursor: 'text',
@@ -119,7 +128,7 @@ function SpeechBubble({ zone, text, inputMode = false, onInputChange, onDragStar
           textAlign: 'center',
           fontFamily: "'Impact', 'Arial Black', sans-serif",
           fontWeight: 'bold',
-          fontSize: '13px',
+          fontSize: bubbleFontSize,
           color: '#000',
           wordBreak: 'break-word',
           lineHeight: 1.2,
@@ -274,7 +283,8 @@ async function downloadMemeAsImage(memeRecord) {
     if (!text) return
 
     const style = zone.style || 'white'
-    const fontSize = Math.max(12, Math.floor(zw / 10))
+    const sizeMultiplier = zone.fontSizeMultiplier || 1
+    const fontSize = Math.max(12, Math.floor((zw / 10) * sizeMultiplier))
 
     if (style === 'transparent') {
       ctx.font = `bold ${fontSize}px 'Impact', 'Arial Black', sans-serif`
@@ -352,7 +362,8 @@ async function downloadMemeAsImage(memeRecord) {
     ctx.stroke()
     ctx.restore()
 
-    const fontSize = Math.max(10, Math.floor(zw / 12))
+    const sizeMultiplier = zone.fontSizeMultiplier || 1
+    const fontSize = Math.max(10, Math.floor((zw / 12) * sizeMultiplier))
     ctx.fillStyle = '#000'
     ctx.font = `bold ${fontSize}px 'Impact', 'Arial Black', sans-serif`
     ctx.textAlign = 'center'
@@ -422,14 +433,23 @@ function getTextZoneDisplayStyle(zone, fontSize = '12px') {
   }
 }
 
-export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'default' }) {
+export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'default', onPhaseChange }) {
   const { user, profile, isAdmin } = useAuth()
   const [phase, setPhase] = useState('writing') // writing, voting, results, ended
   const phaseRef = useRef('writing') // Ref copy of phase for use in closures
+  const currentRoundRef = useRef(lobby.current_round || 0)
+  const maxRoundsRef = useRef(lobby.max_rounds || 3)
   const [currentImage, setCurrentImage] = useState(null)
   const [countdown, setCountdown] = useState(lobby.writing_duration || 60)
+  const [isTimerPaused, setIsTimerPaused] = useState(false)
+  const isTimerPausedRef = useRef(false)
+  const countdownRef = useRef(countdown)
+  useEffect(() => {
+    countdownRef.current = countdown
+  }, [countdown])
   const [textInputs, setTextInputs] = useState({})
   const [textStyles, setTextStyles] = useState({}) // Change #6: per-zone style toggle
+  const [customFontSizes, setCustomFontSizes] = useState({}) // maps zone.id -> scale multiplier
   const [submitted, setSubmitted] = useState(false)
 
   // Change #3: Swap state
@@ -485,7 +505,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
         }}
       >
         <div style={{ width: '90%', maxWidth: '500px' }}>
-          <RetroBox title="PARAMÈTRES" theme={theme} style={{ position: 'relative' }}>
+          <RetroBox title="PARAMÈTRES" theme={theme} className="main-card no-float" style={{ position: 'relative' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {settingsConfig.map(({ key, label, min, max, suffix }) => (
                 <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -652,6 +672,18 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
   const [currentRound, setCurrentRound] = useState(lobby.current_round || 0)
   const [maxRounds, setMaxRounds] = useState(lobby.max_rounds || 3)
 
+  const [prevLobbyRound, setPrevLobbyRound] = useState(lobby.current_round)
+  const [prevLobbyMaxRounds, setPrevLobbyMaxRounds] = useState(lobby.max_rounds)
+
+  if (lobby.current_round !== prevLobbyRound) {
+    setPrevLobbyRound(lobby.current_round)
+    setCurrentRound(lobby.current_round || 0)
+  }
+  if (lobby.max_rounds !== prevLobbyMaxRounds) {
+    setPrevLobbyMaxRounds(lobby.max_rounds)
+    setMaxRounds(lobby.max_rounds || 3)
+  }
+
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -787,6 +819,40 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
     }
   }, [draggingZoneId, resizingZoneId])
 
+  const adjustZoneFontSize = (zoneId, direction) => {
+    const currentVal = customFontSizes[zoneId] || 1
+    let newVal
+    if (direction === 'up') {
+      newVal = Math.min(1.5, parseFloat((currentVal + 0.1).toFixed(1))) // Max 150% (1.5)
+    } else {
+      newVal = Math.max(0.5, parseFloat((currentVal - 0.1).toFixed(1))) // Min 50% (0.5)
+    }
+
+    if (newVal === currentVal) return
+    setCustomFontSizes(prev => ({ ...prev, [zoneId]: newVal }))
+
+    // Adjust the zone's width and height proportionally to avoid text overflow
+    setMyTextZones(prev => prev.map(z => {
+      if (z.id === zoneId) {
+        const ratio = newVal / currentVal
+        const newW = z.width * (1 + (ratio - 1) * 0.5) // scale width slightly
+        const newH = z.height * ratio // scale height proportionally
+
+        const clampedW = parseFloat(Math.max(5, Math.min(100 - z.x, newW)).toFixed(2))
+        const clampedH = parseFloat(Math.max(5, Math.min(100 - z.y, newH)).toFixed(2))
+
+        return {
+          ...z,
+          width: clampedW,
+          height: clampedH,
+          w: clampedW,
+          h: clampedH
+        }
+      }
+      return z
+    }))
+  }
+
   // Determine if this user is the host.
   // If admin players are present, only admins are hosts; otherwise fallback to lobby creator.
   const computeIsHost = useCallback(() => {
@@ -827,10 +893,70 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
   const hasReceivedRoundRef = useRef(false) // True once a START_ROUND broadcast has been received
   const transitioningRef = useRef(false) // Guard against double transitionToVoting calls
 
-  // Keep phaseRef in sync with phase state so closures always see the current phase
+  // Keep phaseRef and other refs in sync with state so closures always see the current values
   useEffect(() => {
     phaseRef.current = phase
-  }, [phase])
+    if (onPhaseChange) {
+      onPhaseChange(phase)
+    }
+  }, [phase, onPhaseChange])
+
+  useEffect(() => {
+    currentRoundRef.current = currentRound
+  }, [currentRound])
+
+  useEffect(() => {
+    maxRoundsRef.current = maxRounds
+  }, [maxRounds])
+
+  const togglePauseTimer = () => {
+    if (!isHostRef.current && !isAdmin) return
+    const newPaused = !isTimerPausedRef.current
+    isTimerPausedRef.current = newPaused
+    setIsTimerPaused(newPaused)
+
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'TIMER_PAUSE_TOGGLE',
+        payload: { isPaused: newPaused, countdown: countdownRef.current },
+      })
+    }
+  }
+
+  const handleForceEndTimer = async () => {
+    if (!isHostRef.current && !isAdmin) return
+    if (timerRef.current) clearInterval(timerRef.current)
+
+    isTimerPausedRef.current = false
+    setIsTimerPaused(false)
+
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'TIMER_PAUSE_TOGGLE',
+        payload: { isPaused: false },
+      })
+    }
+
+    if (phaseRef.current === 'writing') {
+      await transitionToVoting()
+    } else if (phaseRef.current === 'voting') {
+      const nextIndex = currentMemeIndex + 1
+      if (nextIndex < allMemes.length) {
+        const votingDuration = lobby.voting_duration || 15
+        runVotingLoop(allMemes, votingDuration, nextIndex)
+      } else {
+        await transitionToResults(allMemes)
+      }
+    } else if (phaseRef.current === 'results') {
+      if (currentRoundRef.current >= maxRoundsRef.current) {
+        await handleEndGame()
+      } else {
+        await startNewRound()
+      }
+    }
+  }
 
   const fetchPlayers = async () => {
     try {
@@ -857,6 +983,9 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
 
     channel
       .on('broadcast', { event: 'START_ROUND' }, ({ payload }) => {
+        // Fix: if the host already applied state directly in startNewRound, skip the self-broadcast
+        // to avoid double state update. Non-hosts always process this normally.
+        if (isHostRef.current && hasReceivedRoundRef.current) return
         hasReceivedRoundRef.current = true // Mark that we received this round's broadcast
         setPhase('writing')
         // Change #2: unique template per player
@@ -869,6 +998,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
         setCountdown(payload.duration || 60)
         setTextInputs({})
         setTextStyles({}) // Reset text styles
+        setCustomFontSizes({}) // Reset custom font sizes
         setSubmitted(false)
         setAllMemes([])
         setCurrentMemeIndex(0)
@@ -887,12 +1017,23 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
           setVotingMode(payload.votingMode)
         }
         setLoading(false)
+        setIsTimerPaused(false)
+        isTimerPausedRef.current = false
       })
       .on('broadcast', { event: 'TIMER_TICK' }, ({ payload }) => {
         setCountdown(payload.countdown)
       })
+      .on('broadcast', { event: 'TIMER_PAUSE_TOGGLE' }, ({ payload }) => {
+        setIsTimerPaused(payload.isPaused)
+        isTimerPausedRef.current = payload.isPaused
+        if (payload.countdown !== undefined) {
+          setCountdown(payload.countdown)
+        }
+      })
       .on('broadcast', { event: 'START_VOTING' }, ({ payload }) => {
         hasReceivedRoundRef.current = false // Reset round tracker for next round
+        setIsTimerPaused(false)
+        isTimerPausedRef.current = false
         setPhase('voting')
         setAllMemes(payload.memes)
         setCurrentMemeIndex(0)
@@ -906,6 +1047,8 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
         setCountdown(payload.countdown)
       })
       .on('broadcast', { event: 'START_RESULTS' }, ({ payload }) => {
+        setIsTimerPaused(false)
+        isTimerPausedRef.current = false
         setPhase('results')
         setPlayers(payload.players)
         setVotesData(payload.votesData || [])
@@ -919,6 +1062,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
         if (payload.votingMode !== undefined) {
           setVotingMode(payload.votingMode)
         }
+        setCountdown(20)
         setLoading(false)
       })
       .on('broadcast', { event: 'GAME_OVER' }, () => {
@@ -1015,7 +1159,6 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
             }
 
             if (payload.new.status === 'writing') {
-              hasReceivedRoundRef.current = false
               setTimeout(() => {
                 if (phaseRef.current !== 'writing') {
                   channelRef.current.send({
@@ -1088,14 +1231,11 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                 }
               }
             } else if (!amIHost) {
-              // Non-host client: if lobby is already in an active game phase (writing/voting),
-              // request the current round state from the host (we may have missed the broadcast).
-              // This covers both the first round (current_round === 0) and subsequent rounds.
-              if (lobby.status === 'writing' || lobby.status === 'voting') {
+              // Non-host client: if lobby is already in active game phase:
+              if (lobby.status === 'writing') {
                 // Wait 4s to give host enough time to complete startNewRound (several DB calls)
                 setTimeout(() => {
                   // Only request if we still haven't received a START_ROUND broadcast
-                  // (prevents resetting players who are already creating their mème)
                   if (!hasReceivedRoundRef.current) {
                     channelRef.current.send({
                       type: 'broadcast',
@@ -1104,6 +1244,28 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                     })
                   }
                 }, 4000)
+              } else if (lobby.status === 'voting') {
+                // If the game is already in voting phase, transition to voting
+                setPhase('voting')
+                setLoading(true)
+                getLobbyMemes(lobby.id).then(async (memes) => {
+                  let settings = {}
+                  try {
+                    settings = await getLobbySettings(lobby.id)
+                  } catch (err) {
+                    console.warn('Failed to load settings in voting mount check:', err)
+                  }
+                  const votingDuration = settings.voting_duration || lobby.voting_duration || 15
+                  setAllMemes(memes)
+                  setCurrentMemeIndex(0)
+                  setCountdown(votingDuration)
+                  setMyVotes({})
+                  setMyPokeballMemeId(null)
+                  setLoading(false)
+                }).catch(err => {
+                  console.error(err)
+                  setLoading(false)
+                })
               }
             }
           }, 1500)
@@ -1125,6 +1287,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
 
   async function startNewRound(playersOverride) {
     if (!isHostRef.current && !isAdmin && !playersOverride) return
+    if (timerRef.current) clearInterval(timerRef.current)
     setLoading(true)
     setErrorMsg('')
     try {
@@ -1136,11 +1299,15 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
       }
 
       // Change #12: increment round, clear previous data
-      const newRound = currentRound + 1
+      const newRound = (currentRoundRef.current || lobby.current_round || 0) + 1
       setCurrentRound(newRound)
       await clearLobbyMemesAndVotes(lobby.id)
       await updateLobbyRound(lobby.id, newRound)
-      await updateLobbyStatus(lobby.id, 'writing')
+      // Fix: only update status if not already 'writing' to avoid a duplicate
+      // postgres_changes event that would reset hasReceivedRoundRef after the broadcast
+      if (lobby.status !== 'writing') {
+        await updateLobbyStatus(lobby.id, 'writing')
+      }
 
       // Change #13: get lobby settings for durations
       let settings = {}
@@ -1178,6 +1345,27 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
         payload: roundPayload,
       })
 
+      // Fix: host applies state directly instead of relying on the self-broadcast,
+      // which is not guaranteed to be delivered reliably (especially on first round).
+      hasReceivedRoundRef.current = true
+      setPhase('writing')
+      setCurrentImage(playerImages[user.id] || shuffledTemplates[0])
+      setCountdown(writingDuration)
+      setTextInputs({})
+      setTextStyles({})
+      setCustomFontSizes({})
+      setSubmitted(false)
+      setAllMemes([])
+      setCurrentMemeIndex(0)
+      setMyVotes({})
+      setMyPokeballMemeId(null)
+      setSubmittedPlayers(new Set())
+      transitioningRef.current = false
+      setAllTemplates(templates)
+      setSwapsLeft(swapLimit)
+      if (votingMode !== undefined) setVotingMode(votingMode)
+      setLoading(false)
+
       // Run writing timer
       runWritingTimer(writingDuration)
     } catch (err) {
@@ -1188,10 +1376,13 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
   }
 
   function runWritingTimer(duration) {
+    isTimerPausedRef.current = false
+    setIsTimerPaused(false)
     let remaining = duration
     if (timerRef.current) clearInterval(timerRef.current)
 
     timerRef.current = setInterval(async () => {
+      if (isTimerPausedRef.current) return
       remaining -= 1
       channelRef.current.send({
         type: 'broadcast',
@@ -1254,6 +1445,8 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
   }
 
   function runVotingLoop(memesList, voteDuration = 15, startIndex = 0) {
+    isTimerPausedRef.current = false
+    setIsTimerPaused(false)
     let memeIndex = startIndex
     let remaining = voteDuration
 
@@ -1267,6 +1460,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
     })
 
     timerRef.current = setInterval(async () => {
+      if (isTimerPausedRef.current) return
       remaining -= 1
 
       channelRef.current.send({
@@ -1289,6 +1483,38 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
           clearInterval(timerRef.current)
           // All memes voted, transition to results
           await transitionToResults(memesList)
+        }
+      }
+    }, 1000)
+  }
+
+  function runResultsTimer(duration) {
+    isTimerPausedRef.current = false
+    setIsTimerPaused(false)
+    let remaining = duration
+    if (timerRef.current) clearInterval(timerRef.current)
+
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'TIMER_TICK',
+      payload: { countdown: remaining },
+    })
+
+    timerRef.current = setInterval(async () => {
+      if (isTimerPausedRef.current) return
+      remaining -= 1
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'TIMER_TICK',
+        payload: { countdown: remaining },
+      })
+
+      if (remaining <= 0) {
+        clearInterval(timerRef.current)
+        if (currentRoundRef.current >= maxRoundsRef.current) {
+          await handleEndGame()
+        } else {
+          await startNewRound()
         }
       }
     }, 1000)
@@ -1386,6 +1612,26 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
 
         if (highestPoints > 0 && roundWinnerIds.length > 0) {
           await recordRoundWinners(roundWinnerIds)
+
+          // Save winning meme snapshot to the Hall of Fame
+          try {
+            const winnerProfileId = roundWinnerIds[0]
+            const winnerPlayer = updatedPlayers.find(p => p.profile_id === winnerProfileId)
+            const winnerMeme = memesList.find(m => m.profile_id === winnerProfileId)
+            if (winnerMeme && winnerMeme.images) {
+              await saveWinningMemeToHallOfFame({
+                imageUrl: winnerMeme.images.url,
+                templateName: winnerMeme.images.name,
+                textZones: winnerMeme.text_zones || [],
+                winnerProfileId,
+                winnerUsername: winnerPlayer?.profiles?.username || winners[0] || 'Anonyme',
+                winnerAvatarUrl: winnerPlayer?.profiles?.avatar_url || null,
+                scoreEarned: highestPoints,
+              })
+            }
+          } catch (hofErr) {
+            console.error('Failed to save to Hall of Fame:', hofErr)
+          }
         }
       } catch (statsErr) {
         console.error('Failed to update round statistics in DB:', statsErr)
@@ -1404,6 +1650,9 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
           votingMode,
         },
       })
+
+      // Run results timer
+      runResultsTimer(20)
     } catch (err) {
       console.error(err)
       setErrorMsg('Erreur lors du calcul des scores.')
@@ -1413,6 +1662,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
 
   const handleEndGame = async () => {
     if (!isHostRef.current && !isAdmin) return
+    if (timerRef.current) clearInterval(timerRef.current)
     setLoading(true)
     try {
       if (players && players.length > 0) {
@@ -1504,6 +1754,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
         ...zone,
         text: textInputs[zone.id] || '',
         style: zone.isHeader || zone.isBubble ? undefined : (textStyles[zone.id] || 'white'), // Change #6
+        fontSizeMultiplier: customFontSizes[zone.id] || 1, // Save custom font size multiplier!
       }))
 
       await submitMeme(lobby.id, currentImage.id, user.id, submittedTextZones)
@@ -1523,6 +1774,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
     setCurrentImage(newTemplate)
     setTextInputs({})
     setTextStyles({})
+    setCustomFontSizes({})
     setSwapsLeft(prev => prev - 1)
   }
 
@@ -1662,21 +1914,60 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                     ⚡ PASSER AUX VOTES
                   </button>
                 )}
-                <div
-                  style={{
-                    fontFamily: 'var(--font-press-start)',
-                    fontSize: '18px',
-                    color: countdown <= 10 ? '#c21a1a' : 'inherit',
-                    border: '2px solid var(--border)',
-                    padding: '4px 10px',
-                  }}
-                >
-                  TEMPS: {countdown}s
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-press-start)',
+                      fontSize: '18px',
+                      color: countdown <= 10 ? '#c21a1a' : 'inherit',
+                      border: '2px solid var(--border)',
+                      padding: '4px 10px',
+                      backgroundColor: isTimerPaused ? 'rgba(243, 156, 18, 0.15)' : 'transparent',
+                    }}
+                  >
+                    TEMPS: {isTimerPaused ? 'PAUSE' : `${countdown}s`}
+                  </div>
+                  {(isHost || isAdmin) && (
+                    <div style={{ display: 'flex', gap: '5px' }}>
+                      <button
+                        onClick={togglePauseTimer}
+                        style={{
+                          fontFamily: 'var(--font-press-start)',
+                          fontSize: '9px',
+                          padding: '4px 8px',
+                          backgroundColor: isTimerPaused ? '#2ecc71' : '#f39c12',
+                          color: '#fff',
+                          border: '2px solid var(--border)',
+                          cursor: 'pointer',
+                          borderRadius: '4px',
+                          boxShadow: '1px 1px 0 var(--border)',
+                        }}
+                      >
+                        {isTimerPaused ? '▶ REPRENDRE' : '⏸ PAUSE'}
+                      </button>
+                      <button
+                        onClick={handleForceEndTimer}
+                        style={{
+                          fontFamily: 'var(--font-press-start)',
+                          fontSize: '9px',
+                          padding: '4px 8px',
+                          backgroundColor: '#c0392b',
+                          color: '#fff',
+                          border: '2px solid var(--border)',
+                          cursor: 'pointer',
+                          borderRadius: '4px',
+                          boxShadow: '1px 1px 0 var(--border)',
+                        }}
+                      >
+                        🛑 FIN
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            <RetroBox title="SPECTATEUR" theme={theme}>
+            <RetroBox title="SPECTATEUR" theme={theme} className="main-card">
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', padding: '20px 0' }}>
                 <span style={{ fontSize: '48px', animation: 'retro-bounce 1.5s steps(4, end) infinite' }}>🎮</span>
                 <h2 style={{ fontFamily: 'var(--font-press-start)', fontSize: '18px', textAlign: 'center', margin: 0 }}>
@@ -1686,7 +1977,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                   Une manche est actuellement en cours. Vous participerez automatiquement à la prochaine manche !
                 </p>
                 <div style={{ display: 'flex', gap: '10px', marginTop: '10px', width: '100%' }}>
-                  <RetroButton onClick={onLeave} theme={theme} style={{ flex: 1, backgroundColor: '#c21a1a', color: '#fff' }}>
+                  <RetroButton onClick={onLeave} theme={theme} className="btn-leave" style={{ flex: 1 }}>
                     QUITTER LE SALON
                   </RetroButton>
                 </div>
@@ -1702,7 +1993,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
             >
               ⚙ PARAMÈTRES
             </RetroButton>
-            <RetroBox title="JOUEURS EN LIGNE" theme={theme}>
+            <RetroBox title="JOUEURS EN LIGNE" theme={theme} className="main-card">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {players.length === 0 ? (
                   <p style={{ fontSize: '14px', fontFamily: 'var(--font-press-start)', color: '#666', margin: 0, textAlign: 'center' }}>Aucun joueur</p>
@@ -1817,24 +2108,91 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                   ⚡ PASSER AUX VOTES
                 </button>
               )}
-              <div
-                style={{
-                  fontFamily: 'var(--font-press-start)',
-                  fontSize: '18px',
-                  color: countdown <= 10 ? '#c21a1a' : 'inherit',
-                  border: '2px solid var(--border)',
-                  padding: '4px 10px',
-                }}
-              >
-                TEMPS: {countdown}s
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-press-start)',
+                    fontSize: '18px',
+                    color: countdown <= 10 ? '#c21a1a' : 'inherit',
+                    border: '2px solid var(--border)',
+                    padding: '4px 10px',
+                    backgroundColor: isTimerPaused ? 'rgba(243, 156, 18, 0.15)' : 'transparent',
+                  }}
+                >
+                  TEMPS: {isTimerPaused ? 'PAUSE' : `${countdown}s`}
+                </div>
+                {(isHost || isAdmin) && (
+                  <div style={{ display: 'flex', gap: '5px' }}>
+                    <button
+                      onClick={togglePauseTimer}
+                      style={{
+                        fontFamily: 'var(--font-press-start)',
+                        fontSize: '9px',
+                        padding: '4px 8px',
+                        backgroundColor: isTimerPaused ? '#2ecc71' : '#f39c12',
+                        color: '#fff',
+                        border: '2px solid var(--border)',
+                        cursor: 'pointer',
+                        borderRadius: '4px',
+                        boxShadow: '1px 1px 0 var(--border)',
+                      }}
+                    >
+                      {isTimerPaused ? '▶ REPRENDRE' : '⏸ PAUSE'}
+                    </button>
+                    <button
+                      onClick={handleForceEndTimer}
+                      style={{
+                        fontFamily: 'var(--font-press-start)',
+                        fontSize: '9px',
+                        padding: '4px 8px',
+                        backgroundColor: '#c0392b',
+                        color: '#fff',
+                        border: '2px solid var(--border)',
+                        cursor: 'pointer',
+                        borderRadius: '4px',
+                        boxShadow: '1px 1px 0 var(--border)',
+                      }}
+                    >
+                      🛑 FIN
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }} className="editor-grid">
+          <div style={{ display: 'grid', gridTemplateColumns: '1.85fr 1.15fr', gap: '20px' }} className="editor-grid">
             {/* Visual template showcase with overlay inputs */}
-            <RetroBox title={currentImage?.name ? currentImage.name.toUpperCase() : "MODÈLE DE MEME"} theme={theme} style={{ padding: '8px', backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 10005 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: '#fff', width: '100%', maxWidth: '100%', border: '1px solid #ccc', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {/* Meme Name Badge */}
+              <div style={{
+                fontFamily: 'var(--font-press-start)',
+                fontSize: '11px',
+                color: 'var(--accent, #ffd700)',
+                backgroundColor: 'var(--code-bg, #0b132b)',
+                border: '2px solid var(--border, #3a506b)',
+                padding: '6px 12px',
+                borderRadius: '4px',
+                display: 'inline-block',
+                alignSelf: 'flex-start',
+                boxShadow: '2px 2px 0 var(--border, #3a506b)'
+              }}>
+                🏷️ MODÈLE : {currentImage?.name ? currentImage.name.toUpperCase() : "SANS NOM"}
+              </div>
+
+              {/* Highlighted Meme Container */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: '#000',
+                border: '3px solid var(--accent, #ffd700)',
+                boxShadow: '0 0 20px var(--accent, rgba(255, 215, 0, 0.45)), 0 8px 32px rgba(0, 0, 0, 0.6)',
+                boxSizing: 'border-box',
+                position: 'relative',
+                zIndex: 10005,
+                padding: '8px'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: '#fff', width: '100%', maxWidth: '100%', border: '1px solid #ccc', boxSizing: 'border-box' }}>
                 {currentImage.text_zones.find(z => z.isHeader) && (() => {
                   const headerZone = currentImage.text_zones.find(z => z.isHeader)
                   const headerText = textInputs[headerZone.id] || ''
@@ -1885,13 +2243,13 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                     </div>
                   )
                 })()}
-                <div ref={containerRef} style={{ position: 'relative', display: 'inline-block', width: '100%', backgroundColor: '#000' }}>
+                <div ref={containerRef} style={{ position: 'relative', display: 'inline-block', width: '100%', backgroundColor: '#000', containerType: 'inline-size' }}>
                   <img
                     src={currentImage.url}
                     alt="Meme template"
                     style={{
                       width: '100%',
-                      maxHeight: '400px',
+                      maxHeight: '650px',
                       objectFit: 'contain',
                       display: 'block',
                     }}
@@ -1901,7 +2259,9 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                   {!submitted &&
                     myTextZones.filter(z => !z.isHeader && !z.isBubble).map((zone) => {
                       const zoneText = textInputs[zone.id] || ''
-                      const zoneFontSize = dynamicFontSize(zoneText, 16)
+                      const sizeMultiplier = customFontSizes[zone.id] || 1
+                      const textLengthScale = Math.max(0.6, 1 - Math.floor((zoneText || '').length / 15) * 0.08)
+                      const zoneFontSize = `max(10px, calc(${zone.width} * 0.1 * ${textLengthScale} * ${sizeMultiplier}cqw))`
                       const zoneStyle = textStyles[zone.id] || 'white'
                       return (
                         <div key={zone.id} style={{
@@ -1924,7 +2284,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                               backgroundColor: zoneStyle === 'transparent' ? 'transparent' : 'rgba(255, 255, 255, 0.75)',
                               border: zoneStyle === 'transparent' ? '2px dashed rgba(255,255,255,0.5)' : '2px solid #000',
                               fontFamily: "'Impact', 'Arial Black', sans-serif",
-                              fontSize: `${zoneFontSize}px`,
+                              fontSize: zoneFontSize,
                               textAlign: 'center',
                               boxSizing: 'border-box',
                               padding: '2px',
@@ -1935,32 +2295,6 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                               outline: 'none',
                             }}
                           />
-                          {/* Change #6: Style toggle button */}
-                          <button
-                            onClick={() => handleStyleToggle(zone.id)}
-                            title={zoneStyle === 'transparent' ? 'Mode: transparent' : 'Mode: fond blanc'}
-                            style={{
-                              position: 'absolute',
-                              top: '-14px',
-                              right: '-14px',
-                              width: '20px',
-                              height: '20px',
-                              borderRadius: '50%',
-                              border: '2px solid #000',
-                              backgroundColor: zoneStyle === 'transparent' ? '#333' : '#fff',
-                              color: zoneStyle === 'transparent' ? '#fff' : '#000',
-                              fontSize: '10px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              padding: 0,
-                              lineHeight: 1,
-                              zIndex: 25,
-                            }}
-                          >
-                            {zoneStyle === 'transparent' ? 'T' : 'W'}
-                          </button>
                           {/* Drag handle */}
                           <div
                             onMouseDown={(e) => handleZoneDragStart(zone.id, e)}
@@ -2028,19 +2362,24 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                         onInputChange={(val) => handleInputChange(zone.id, val)}
                         onDragStart={(e) => handleZoneDragStart(zone.id, e)}
                         onResizeStart={(e) => handleZoneResizeStart(zone.id, e)}
+                        sizeMultiplier={customFontSizes[zone.id] || 1}
                       />
                     ))}
 
                   {/* If submitted, show static text (regular zones, excluding header & bubbles) */}
                   {submitted &&
                     myTextZones.filter(z => !z.isHeader && !z.isBubble).map((zone) => {
+                      const zoneText = textInputs[zone.id] || ''
+                      const textLengthScale = Math.max(0.6, 1 - Math.floor((zoneText || '').length / 15) * 0.08)
+                      const sizeMultiplier = customFontSizes[zone.id] || 1
+                      const zoneFontSize = `max(10px, calc(${zone.width} * 0.1 * ${textLengthScale} * ${sizeMultiplier}cqw))`
                       const zoneStyle = textStyles[zone.id] || 'white'
                       return (
                         <div
                           key={zone.id}
-                          style={getTextZoneDisplayStyle({ ...zone, style: zoneStyle }, '12px')}
+                          style={getTextZoneDisplayStyle({ ...zone, style: zoneStyle }, zoneFontSize)}
                         >
-                          {textInputs[zone.id] || ''}
+                          {zoneText}
                         </div>
                       )
                     })}
@@ -2057,11 +2396,12 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                     ))}
                 </div>
               </div>
-            </RetroBox>
+            </div>
+          </div>
 
             {/* Submissions side panel */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <RetroBox title="RÉDACTION" theme={theme} style={{ flexGrow: 1, padding: '10px' }}>
+              <RetroBox title="RÉDACTION" theme={theme} className="main-card" style={{ flexGrow: 1, padding: '10px' }}>
                 {submitted ? (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '10px' }}>
                     <span style={{ fontSize: '32px' }}>✔</span>
@@ -2081,8 +2421,8 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                           ? `💬 BULLE ${bubbleZones.indexOf(zone) + 1}`
                           : `📝 TEXTE ${normalZones.indexOf(zone) + 1}`;
                       return (
-                        <div key={zone.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <label style={{ fontFamily: 'var(--font-press-start)', fontSize: '10px' }}>{label}</label>
+                        <div key={zone.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px dashed var(--border)', paddingBottom: '10px', marginBottom: '5px' }}>
+                          <label style={{ fontFamily: 'var(--font-press-start)', fontSize: '10px', color: 'var(--text-h)' }}>{label}</label>
                           <textarea
                             value={textInputs[zone.id] || ''}
                             onChange={(e) => handleInputChange(zone.id, e.target.value)}
@@ -2102,6 +2442,50 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                               boxSizing: 'border-box',
                             }}
                           />
+                          
+                          {/* Controls row for font size and style */}
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px', fontSize: '12px' }}>
+                            {/* Font size +/- controls */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '11px', opacity: 0.8, fontFamily: 'var(--font-vt323)' }}>POLICE :</span>
+                              <RetroButton
+                                onClick={() => adjustZoneFontSize(zone.id, 'down')}
+                                theme={theme}
+                                style={{ padding: '1px 6px', fontSize: '10px', minHeight: 'auto' }}
+                              >
+                                -
+                              </RetroButton>
+                              <span style={{ fontFamily: 'var(--font-press-start)', fontSize: '8px', minWidth: '36px', textAlign: 'center', display: 'inline-block' }}>
+                                {Math.round((customFontSizes[zone.id] || 1) * 100)}%
+                              </span>
+                              <RetroButton
+                                onClick={() => adjustZoneFontSize(zone.id, 'up')}
+                                theme={theme}
+                                style={{ padding: '1px 6px', fontSize: '10px', minHeight: 'auto' }}
+                              >
+                                +
+                              </RetroButton>
+                            </div>
+
+                            {/* Transparent vs White background style toggle (only for regular zones) */}
+                            {!zone.isHeader && !zone.isBubble && (
+                              <RetroButton
+                                onClick={() => handleStyleToggle(zone.id)}
+                                theme={theme}
+                                style={{
+                                  padding: '2px 8px',
+                                  fontSize: '10px',
+                                  fontFamily: 'var(--font-press-start)',
+                                  backgroundColor: (textStyles[zone.id] || 'white') === 'transparent' ? 'transparent' : 'var(--accent-bg)',
+                                  color: (textStyles[zone.id] || 'white') === 'transparent' ? 'var(--text)' : 'var(--text-h)',
+                                  minHeight: 'auto',
+                                  lineHeight: '1.2'
+                                }}
+                              >
+                                {(textStyles[zone.id] || 'white') === 'transparent' ? '❏ FOND TRANSPARENT' : '⬛ FOND BLANC'}
+                              </RetroButton>
+                            )}
+                          </div>
                         </div>
                       )
                     })}
@@ -2126,7 +2510,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
               )}
 
               {!submitted && (
-                <RetroButton onClick={handleSubmitMeme} theme={theme} style={{ width: '100%' }}>
+                <RetroButton onClick={handleSubmitMeme} theme={theme} className="btn-submit-meme retro-pulse" style={{ width: '100%' }}>
                   VALIDER LE MEME !
                 </RetroButton>
               )}
@@ -2139,8 +2523,19 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
       {phase === 'voting' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {allMemes.length === 0 ? (
-            <RetroBox title="VOTES" theme={theme}>
-              <p style={{ textAlign: 'center' }}>Aucun meme n'a été soumis cette manche...</p>
+            <RetroBox title="VOTES" theme={theme} className="main-card">
+              <p style={{
+                textAlign: 'center',
+                fontSize: '20px',
+                color: '#ff4a5a',
+                fontFamily: 'var(--font-press-start)',
+                lineHeight: '1.8',
+                padding: '20px',
+                textTransform: 'uppercase',
+                textShadow: '2px 2px 0px #000'
+              }}>
+                VOUS N'AVEZ MIS AUCUN MEME, BANDE DE NEUILLLES !
+              </p>
             </RetroBox>
           ) : (
             <>
@@ -2168,16 +2563,55 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                       ⚡ {currentMemeIndex + 1 < allMemes.length ? 'MEME SUIVANT' : 'VOIR RÉSULTATS'}
                     </button>
                   )}
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-press-start)',
-                      fontSize: '18px',
-                      color: countdown <= 5 ? '#c21a1a' : 'inherit',
-                      border: '2px solid var(--border)',
-                      padding: '4px 10px',
-                    }}
-                  >
-                    TEMPS: {countdown}s
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-press-start)',
+                        fontSize: '18px',
+                        color: countdown <= 5 ? '#c21a1a' : 'inherit',
+                        border: '2px solid var(--border)',
+                        padding: '4px 10px',
+                        backgroundColor: isTimerPaused ? 'rgba(243, 156, 18, 0.15)' : 'transparent',
+                      }}
+                    >
+                      TEMPS: {isTimerPaused ? 'PAUSE' : `${countdown}s`}
+                    </div>
+                    {(isHost || isAdmin) && (
+                      <div style={{ display: 'flex', gap: '5px' }}>
+                        <button
+                          onClick={togglePauseTimer}
+                          style={{
+                            fontFamily: 'var(--font-press-start)',
+                            fontSize: '9px',
+                            padding: '4px 8px',
+                            backgroundColor: isTimerPaused ? '#2ecc71' : '#f39c12',
+                            color: '#fff',
+                            border: '2px solid var(--border)',
+                            cursor: 'pointer',
+                            borderRadius: '4px',
+                            boxShadow: '1px 1px 0 var(--border)',
+                          }}
+                        >
+                          {isTimerPaused ? '▶ REPRENDRE' : '⏸ PAUSE'}
+                        </button>
+                        <button
+                          onClick={handleForceEndTimer}
+                          style={{
+                            fontFamily: 'var(--font-press-start)',
+                            fontSize: '9px',
+                            padding: '4px 8px',
+                            backgroundColor: '#c0392b',
+                            color: '#fff',
+                            border: '2px solid var(--border)',
+                            cursor: 'pointer',
+                            borderRadius: '4px',
+                            boxShadow: '1px 1px 0 var(--border)',
+                          }}
+                        >
+                          🛑 FIN
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2198,6 +2632,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                       </div>
                     }
                     theme={theme}
+                    className="main-card"
                     style={{ padding: '8px', backgroundColor: '#000', display: 'inline-block', maxWidth: '100%' }}
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: '#fff', width: '100%', maxWidth: '100%', border: '1px solid #ccc', boxSizing: 'border-box' }}>
@@ -2221,24 +2656,31 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                           </div>
                         )
                       })()}
-                      <div style={{ position: 'relative', display: 'inline-block', maxWidth: '100%', backgroundColor: '#000' }}>
+                      <div style={{ position: 'relative', display: 'inline-block', width: '100%', backgroundColor: '#000', containerType: 'inline-size' }}>
                         <img
                           src={allMemes[currentMemeIndex].images?.url}
                           alt="Submitted Meme"
                           style={{
-                            maxWidth: '100%',
+                            width: '100%',
                             maxHeight: '400px',
+                            objectFit: 'contain',
                             display: 'block',
                           }}
                         />
-                        {allMemes[currentMemeIndex].text_zones.filter(z => !z.isHeader && !z.isBubble).map((zone) => (
-                          <div
-                            key={zone.id}
-                            style={getTextZoneDisplayStyle(zone, '12px')}
-                          >
-                            {zone.text || ''}
-                          </div>
-                        ))}
+                        {allMemes[currentMemeIndex].text_zones.filter(z => !z.isHeader && !z.isBubble).map((zone) => {
+                          const zoneText = zone.text || ''
+                          const textLengthScale = Math.max(0.6, 1 - Math.floor(zoneText.length / 15) * 0.08)
+                          const sizeMultiplier = zone.fontSizeMultiplier || 1
+                          const zoneFontSize = `max(10px, calc(${zone.width} * 0.1 * ${textLengthScale} * ${sizeMultiplier}cqw))`
+                          return (
+                            <div
+                              key={zone.id}
+                              style={getTextZoneDisplayStyle(zone, zoneFontSize)}
+                            >
+                              {zoneText}
+                            </div>
+                          )
+                        })}
                         {allMemes[currentMemeIndex].text_zones.filter(z => z.isBubble).map((zone) => (
                           <SpeechBubble
                             key={zone.id}
@@ -2248,6 +2690,15 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                           />
                         ))}
                       </div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
+                      <RetroButton
+                        onClick={() => downloadMemeAsImage(allMemes[currentMemeIndex])}
+                        theme={theme}
+                        style={{ fontSize: '11px', padding: '6px 12px', minHeight: 'auto' }}
+                      >
+                        📥 TÉLÉCHARGER CE POULET 🍗
+                      </RetroButton>
                     </div>
                   </RetroBox>
 
@@ -2288,10 +2739,9 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                               <RetroButton
                                 onClick={() => handleVote(sliderValue.toString())}
                                 theme={theme}
+                                className={myVotes[allMemes[currentMemeIndex].id] === sliderValue.toString() ? "btn-vote-submit is-voted" : "btn-vote-submit retro-pulse"}
                                 style={{
                                   width: '100%',
-                                  backgroundColor: myVotes[allMemes[currentMemeIndex].id] === sliderValue.toString() ? '#306230' : 'var(--accent-bg)',
-                                  color: myVotes[allMemes[currentMemeIndex].id] === sliderValue.toString() ? '#fff' : 'var(--accent)',
                                 }}
                               >
                                 {myVotes[allMemes[currentMemeIndex].id] === sliderValue.toString() ? '✓ NOTE ENREGISTRÉE' : 'VALIDER LA NOTE'}
@@ -2317,44 +2767,32 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                               <RetroButton
                                 onClick={() => handleVote('masterclass')}
                                 theme={theme}
-                                style={{
-                                  flex: '1 1 45%',
-                                  backgroundColor: myVotes[allMemes[currentMemeIndex].id] === 'masterclass' ? '#ffd700' : 'var(--code-bg)',
-                                  color: myVotes[allMemes[currentMemeIndex].id] === 'masterclass' ? '#000' : 'var(--text)',
-                                }}
+                                className={`vote-btn-masterclass ${myVotes[allMemes[currentMemeIndex].id] === 'masterclass' ? 'is-selected' : ''}`}
+                                style={{ flex: '1 1 45%' }}
                               >
                                 MASTERCLASS (+1000)
                               </RetroButton>
                               <RetroButton
                                 onClick={() => handleVote('pas mal')}
                                 theme={theme}
-                                style={{
-                                  flex: '1 1 45%',
-                                  backgroundColor: myVotes[allMemes[currentMemeIndex].id] === 'pas mal' ? '#8bac0f' : 'var(--code-bg)',
-                                  color: myVotes[allMemes[currentMemeIndex].id] === 'pas mal' ? '#fff' : 'var(--text)',
-                                }}
+                                className={`vote-btn-pasmal ${myVotes[allMemes[currentMemeIndex].id] === 'pas mal' ? 'is-selected' : ''}`}
+                                style={{ flex: '1 1 45%' }}
                               >
                                 PAS MAL (+400)
                               </RetroButton>
                               <RetroButton
                                 onClick={() => handleVote('mouais')}
                                 theme={theme}
-                                style={{
-                                  flex: '1 1 45%',
-                                  backgroundColor: myVotes[allMemes[currentMemeIndex].id] === 'mouais' ? '#888' : 'var(--code-bg)',
-                                  color: myVotes[allMemes[currentMemeIndex].id] === 'mouais' ? '#fff' : 'var(--text)',
-                                }}
+                                className={`vote-btn-mouais ${myVotes[allMemes[currentMemeIndex].id] === 'mouais' ? 'is-selected' : ''}`}
+                                style={{ flex: '1 1 45%' }}
                               >
                                 MOUAIS (0)
                               </RetroButton>
                               <RetroButton
                                 onClick={() => handleVote('guez')}
                                 theme={theme}
-                                style={{
-                                  flex: '1 1 45%',
-                                  backgroundColor: myVotes[allMemes[currentMemeIndex].id] === 'guez' ? '#c21a1a' : 'var(--code-bg)',
-                                  color: myVotes[allMemes[currentMemeIndex].id] === 'guez' ? '#fff' : 'var(--text)',
-                                }}
+                                className={`vote-btn-guez ${myVotes[allMemes[currentMemeIndex].id] === 'guez' ? 'is-selected' : ''}`}
+                                style={{ flex: '1 1 45%' }}
                               >
                                 GUEZ (-500)
                               </RetroButton>
@@ -2364,9 +2802,8 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                             <RetroButton
                               onClick={handlePokeballToggle}
                               theme={theme}
+                              className={`btn-pokeball ${myPokeballMemeId === allMemes[currentMemeIndex].id ? 'is-selected' : ''}`}
                               style={{
-                                backgroundColor: myPokeballMemeId === allMemes[currentMemeIndex].id ? '#ffcb05' : 'var(--code-bg)',
-                                color: myPokeballMemeId === allMemes[currentMemeIndex].id ? '#000' : 'var(--text)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -2403,10 +2840,62 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
         const bestMemeIds = getBestMemeIds()
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <RetroBox title="RÉSULTATS DE LA MANCHE" theme={theme}>
+            <RetroBox title="RÉSULTATS DE LA MANCHE" theme={theme} className="main-card">
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
                 {/* Change #12: show round number */}
                 <h2 style={{ fontSize: '28px', margin: '0', textAlign: 'center' }}>🏆 MANCHE {currentRound}/{maxRounds} — GAGNANTS 🏆</h2>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-press-start)',
+                      fontSize: '14px',
+                      color: countdown <= 5 ? '#c21a1a' : 'var(--accent, #ffd700)',
+                      border: '2px solid var(--border)',
+                      padding: '6px 12px',
+                      textAlign: 'center',
+                      backgroundColor: isTimerPaused ? 'rgba(243, 156, 18, 0.15)' : 'rgba(0,0,0,0.2)',
+                      margin: '5px 0',
+                    }}
+                  >
+                    {currentRound >= maxRounds ? 'PODIUM DANS' : 'PROCHAINE MANCHE DANS'} : {isTimerPaused ? 'PAUSE' : `${Math.max(0, countdown)}s`}
+                  </div>
+                  {(isHost || isAdmin) && (
+                    <div style={{ display: 'flex', gap: '5px', marginBottom: '10px' }}>
+                      <button
+                        onClick={togglePauseTimer}
+                        style={{
+                          fontFamily: 'var(--font-press-start)',
+                          fontSize: '9px',
+                          padding: '4px 8px',
+                          backgroundColor: isTimerPaused ? '#2ecc71' : '#f39c12',
+                          color: '#fff',
+                          border: '2px solid var(--border)',
+                          cursor: 'pointer',
+                          borderRadius: '4px',
+                          boxShadow: '1px 1px 0 var(--border)',
+                        }}
+                      >
+                        {isTimerPaused ? '▶ REPRENDRE' : '⏸ PAUSE'}
+                      </button>
+                      <button
+                        onClick={handleForceEndTimer}
+                        style={{
+                          fontFamily: 'var(--font-press-start)',
+                          fontSize: '9px',
+                          padding: '4px 8px',
+                          backgroundColor: '#c0392b',
+                          color: '#fff',
+                          border: '2px solid var(--border)',
+                          cursor: 'pointer',
+                          borderRadius: '4px',
+                          boxShadow: '1px 1px 0 var(--border)',
+                        }}
+                      >
+                        🛑 FIN
+                      </button>
+                    </div>
+                  )}
+                </div>
                 {roundWinners.length > 0 ? (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
                     {roundWinners.map((w, i) => (
@@ -2432,7 +2921,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
             </RetroBox>
 
             {/* List of Memes Submitted with Votes count — Change #9: Larger cards */}
-            <RetroBox title="DÉTAIL DES VOTES" theme={theme}>
+            <RetroBox title="DÉTAIL DES VOTES" theme={theme} className="main-card">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {votesData.map((data, index) => {
                   const memeRecord = allMemes.find((m) => m.id === data.memeId)
@@ -2486,7 +2975,6 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                           padding: '6px 16px',
                           border: '3px solid #000',
                           textAlign: 'center',
-                          animation: 'retro-blink 1s steps(2, end) infinite',
                         }}>
                           🌟 MEILLEUR MEME DU ROUND 🌟
                         </div>
@@ -2523,20 +3011,26 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                               </div>
                             )
                           })()}
-                          <div style={{ position: 'relative', width: '100%', backgroundColor: '#000', boxSizing: 'border-box' }}>
+                          <div style={{ position: 'relative', width: '100%', backgroundColor: '#000', boxSizing: 'border-box', containerType: 'inline-size' }}>
                             <img
                               src={memeRecord.images?.url}
                               alt="Thumb"
                               style={{ width: '100%', display: 'block', maxHeight: '400px', objectFit: 'contain' }}
                             />
-                            {memeRecord.text_zones.filter(z => !z.isHeader && !z.isBubble).map((zone) => (
-                               <div
-                                 key={zone.id}
-                                 style={getTextZoneDisplayStyle(zone, '14px')}
-                               >
-                                 {zone.text || ''}
-                               </div>
-                             ))}
+                            {memeRecord.text_zones.filter(z => !z.isHeader && !z.isBubble).map((zone) => {
+                              const zoneText = zone.text || ''
+                              const textLengthScale = Math.max(0.6, 1 - Math.floor(zoneText.length / 15) * 0.08)
+                              const sizeMultiplier = zone.fontSizeMultiplier || 1
+                              const zoneFontSize = `max(10px, calc(${zone.width} * 0.1 * ${textLengthScale} * ${sizeMultiplier}cqw))`
+                              return (
+                                <div
+                                  key={zone.id}
+                                  style={getTextZoneDisplayStyle(zone, zoneFontSize)}
+                                >
+                                  {zoneText}
+                                </div>
+                              )
+                            })}
                              {memeRecord.text_zones.filter(z => z.isBubble).map((zone) => (
                                <SpeechBubble
                                  key={zone.id}
@@ -2591,7 +3085,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                             theme={theme}
                             style={{ marginTop: '8px', fontSize: '11px' }}
                           >
-                            📥 TÉLÉCHARGER
+                            📥 TÉLÉCHARGER CE POULET 🍗
                           </RetroButton>
                         )}
                       </div>
@@ -2602,7 +3096,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
             </RetroBox>
 
             {/* Cumulative Scoreboard */}
-            <RetroBox title="SCOREBOARD GÉNÉRAL" theme={theme}>
+            <RetroBox title="SCOREBOARD GÉNÉRAL" theme={theme} className="main-card">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {players.map((plyr, idx) => (
                   <div
@@ -2628,15 +3122,15 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
             {(isHost || isAdmin) && (
               <div style={{ display: 'flex', gap: '15px' }}>
                 {currentRound >= maxRounds ? (
-                  <RetroButton onClick={handleEndGame} theme={theme} style={{ flex: 1, backgroundColor: '#ffd700', color: '#000' }}>
+                  <RetroButton onClick={handleEndGame} theme={theme} className="btn-podium retro-pulse" style={{ flex: 1 }}>
                     🏆 VOIR LE PODIUM
                   </RetroButton>
                 ) : (
                   <>
-                    <RetroButton onClick={() => startNewRound()} theme={theme} style={{ flex: 1 }}>
+                    <RetroButton onClick={() => startNewRound()} theme={theme} className="btn-next-round retro-pulse" style={{ flex: 1 }}>
                       MANCHE SUIVANTE
                     </RetroButton>
-                    <RetroButton onClick={handleEndGame} theme={theme} style={{ flex: 1, backgroundColor: '#c21a1a', color: '#fff' }}>
+                    <RetroButton onClick={handleEndGame} theme={theme} className="btn-leave" style={{ flex: 1 }}>
                       TERMINER LE JEU
                     </RetroButton>
                   </>
@@ -2650,7 +3144,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
       {/* PHASE 4: GAME OVER / PODIUM PHASE */}
       {phase === 'ended' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <RetroBox title="FIN DE LA PARTIE - PODIUM" theme={theme}>
+          <RetroBox title="FIN DE LA PARTIE - PODIUM" theme={theme} className="main-card">
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '30px', padding: '20px 0' }}>
               <h1 style={{ fontFamily: 'var(--font-press-start)', fontSize: '28px', margin: 0, textAlign: 'center' }}>
                 FIN DU MATCH !
@@ -2771,7 +3265,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
           </RetroBox>
 
           {/* Full Scores List */}
-          <RetroBox title="SCORES FINAUX" theme={theme}>
+          <RetroBox title="SCORES FINAUX" theme={theme} className="main-card">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {players.map((plyr, idx) => (
                 <div
@@ -2795,11 +3289,11 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
 
           {/* Host Replay Controls */}
           {isHost || isAdmin ? (
-            <RetroButton onClick={handleRestartLobby} theme={theme} style={{ width: '100%' }}>
+            <RetroButton onClick={handleRestartLobby} theme={theme} className="btn-next-round retro-pulse" style={{ width: '100%' }}>
               REJOUER (RETOUR AU SALON)
             </RetroButton>
           ) : (
-            <RetroButton onClick={onLeave} theme={theme} style={{ width: '100%' }}>
+            <RetroButton onClick={onLeave} theme={theme} className="btn-leave" style={{ width: '100%' }}>
               QUITTER LE SALON
             </RetroButton>
           )}
@@ -2823,6 +3317,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
               : 'JOUEURS EN LIGNE'
           }
           theme={theme}
+          className="main-card"
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {players.length === 0 ? (

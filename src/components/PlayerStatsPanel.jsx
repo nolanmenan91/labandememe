@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getAllPlayersStats } from '../services/db'
+import { getAllPlayersStats, getHallOfFame } from '../services/db'
 import { RetroBox, RetroInput } from './retro'
 
 export default function PlayerStatsPanel({ theme, designMode }) {
@@ -9,6 +9,8 @@ export default function PlayerStatsPanel({ theme, designMode }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState('games_won')
   const [sortOrder, setSortOrder] = useState('desc')
+  const [hallOfFame, setHallOfFame] = useState([])
+  const [hofLoading, setHofLoading] = useState(true)
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -24,6 +26,21 @@ export default function PlayerStatsPanel({ theme, designMode }) {
       }
     }
     fetchStats()
+  }, [])
+
+  useEffect(() => {
+    const fetchHallOfFame = async () => {
+      try {
+        setHofLoading(true)
+        const data = await getHallOfFame(10)
+        setHallOfFame(data || [])
+      } catch (err) {
+        console.error('Error fetching hall of fame:', err)
+      } finally {
+        setHofLoading(false)
+      }
+    }
+    fetchHallOfFame()
   }, [])
 
   const handleSort = (field) => {
@@ -109,7 +126,7 @@ export default function PlayerStatsPanel({ theme, designMode }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', boxSizing: 'border-box' }}>
-      <RetroBox title="STATISTIQUES DRESSEURS" theme={theme}>
+      <RetroBox title="STATISTIQUES DRESSEURS" theme={theme} className="main-card">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', boxSizing: 'border-box' }}>
           
           {/* Controls Header */}
@@ -386,6 +403,117 @@ export default function PlayerStatsPanel({ theme, designMode }) {
             </div>
           )}
 
+        </div>
+      </RetroBox>
+
+      {/* ── HALL OF FAME ─────────────────────────────────────── */}
+      <RetroBox title="🏆 HALL OF FAME — LES 10 DERNIERS MÈMES GAGNANTS" theme={theme} className="main-card">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', width: '100%' }}>
+          {hofLoading ? (
+            <div style={{ textAlign: 'center', fontFamily: fontTitle, fontSize: isMinimalist ? '16px' : '11px', padding: '30px 0', opacity: 0.7 }}>
+              {isMinimalist ? 'Chargement...' : 'CHARGEMENT DU HALL OF FAME...'}
+            </div>
+          ) : hallOfFame.length === 0 ? (
+            <div style={{ textAlign: 'center', fontFamily: fontBody, fontSize: isMinimalist ? '18px' : '22px', color: '#666', padding: '30px 0' }}>
+              Aucun mème dans le hall of fame pour l'instant. Jouez une partie !
+            </div>
+          ) : (
+            hallOfFame.map((entry, idx) => {
+              const wonDate = new Date(entry.won_at)
+              const now = new Date()
+              const diffMs = now - wonDate
+              const diffMin = Math.floor(diffMs / 60000)
+              const diffH = Math.floor(diffMs / 3600000)
+              const diffD = Math.floor(diffMs / 86400000)
+              const timeAgo = diffD > 0 ? `Il y a ${diffD}j` : diffH > 0 ? `Il y a ${diffH}h` : diffMin > 0 ? `Il y a ${diffMin}min` : 'À l\'instant'
+
+              return (
+                <div
+                  key={entry.id}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '40px 120px 1fr',
+                    gap: '16px',
+                    alignItems: 'center',
+                    padding: '14px 10px',
+                    borderBottom: isMinimalist ? '1px solid rgba(128,128,128,0.2)' : '2px dashed var(--border)',
+                    backgroundColor: idx % 2 === 0 ? (isMinimalist ? 'rgba(128,128,128,0.04)' : 'var(--retro-box-bg)') : 'transparent',
+                  }}
+                >
+                  {/* Rank */}
+                  <div style={{ textAlign: 'center', fontFamily: fontTitle, fontSize: isMinimalist ? '20px' : '14px', fontWeight: 'bold', color: idx === 0 ? '#f5c518' : 'var(--text-h)' }}>
+                    {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+                  </div>
+
+                  {/* Meme image preview */}
+                  <div style={{ position: 'relative', width: '120px', height: '80px', flexShrink: 0, border: '2px solid var(--border)', backgroundColor: '#000', overflow: 'hidden' }}>
+                    <img
+                      src={entry.image_url}
+                      alt={entry.template_name || 'Mème'}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    />
+                    {/* Overlay text zones */}
+                    {(entry.text_zones || []).map((zone, zi) => {
+                      if (!zone.text) return null
+                      return (
+                        <div
+                          key={zi}
+                          style={{
+                            position: 'absolute',
+                            left: `${zone.x}%`,
+                            top: `${zone.y}%`,
+                            width: `${zone.width}%`,
+                            fontSize: '6px',
+                            color: '#fff',
+                            fontFamily: "'Impact', 'Arial Black', sans-serif",
+                            fontWeight: 'bold',
+                            textAlign: 'center',
+                            textShadow: '1px 1px 0 #000, -1px -1px 0 #000',
+                            textTransform: 'uppercase',
+                            lineHeight: 1.2,
+                            wordBreak: 'break-word',
+                            pointerEvents: 'none',
+                          }}
+                        >
+                          {zone.text}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Info */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+                    {/* Winner */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {entry.winner_avatar_url ? (
+                        <img
+                          src={entry.winner_avatar_url}
+                          alt=""
+                          style={{ width: '24px', height: '24px', imageRendering: 'pixelated', border: '1px solid var(--border)', flexShrink: 0 }}
+                        />
+                      ) : (
+                        <div style={{ width: '24px', height: '24px', border: '1px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', flexShrink: 0 }}>?</div>
+                      )}
+                      <span style={{ fontFamily: fontTitle, fontSize: isMinimalist ? '15px' : '10px', color: 'var(--text-h)', textTransform: 'uppercase', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {entry.winner_username}
+                      </span>
+                    </div>
+
+                    {/* Template name */}
+                    <div style={{ fontFamily: fontBody, fontSize: isMinimalist ? '14px' : '18px', color: 'var(--text)', opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {entry.template_name || 'Mème sans titre'}
+                    </div>
+
+                    {/* Score + time */}
+                    <div style={{ display: 'flex', gap: '12px', fontFamily: fontBody, fontSize: isMinimalist ? '13px' : '17px' }}>
+                      <span style={{ color: '#f5c518', fontWeight: 'bold' }}>+{entry.score_earned} pts</span>
+                      <span style={{ opacity: 0.5 }}>{timeAgo}</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          )}
         </div>
       </RetroBox>
     </div>

@@ -27,29 +27,7 @@ import oakGen1 from './assets/oak_avatar_gen1.png'
 import oakGen1rb from './assets/oak_avatar_gen1rb.png'
 import oakGen3 from './assets/oak_avatar_gen3.png'
 
-const POKEMON_AVATARS = [
-  { name: 'Bulbizarre', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png' },
-  { name: 'Salamèche', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png' },
-  { name: 'Carapuce', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png' },
-  { name: 'Pikachu', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png' },
-  { name: 'Rondoudou', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/39.png' },
-  { name: 'Miaouss', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/52.png' },
-  { name: 'Psykokwak', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/54.png' },
-  { name: 'Ectoplasma', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/94.png' },
-  { name: 'Magicarp', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/129.png' },
-  { name: 'Léviator', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/130.png' },
-  { name: 'Metamorph', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/132.png' },
-  { name: 'Évoli', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png' },
-  { name: 'Ronflex', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/143.png' },
-  { name: 'Mewtwo', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png' },
-  { name: 'Mew', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png' },
-  { name: 'Carabaffe', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/8.png' },
-  { name: 'Tortank', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png' },
-  { name: 'Reptincel', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/5.png' },
-  { name: 'Dracaufeu', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png' },
-  { name: 'Herbizarre', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/2.png' },
-  { name: 'Florizarre', url: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/3.png' }
-]
+import { POKEMON_AVATARS, POKEMON_ANECDOTES } from './services/avatars'
 
 const getOakSpriteForTheme = (currentTheme) => {
   switch (currentTheme) {
@@ -65,30 +43,6 @@ const getOakSpriteForTheme = (currentTheme) => {
   }
 }
 
-const POKEMON_ANECDOTES = {
-  'Bulbizarre': 'Bulbizarre ! Un Pokémon de départ très docile. Il adore faire la sieste au soleil pendant que sa graine grandit !',
-  'Salamèche': 'Salamèche ! La flamme au bout de sa queue indique sa santé et sa force. Garde-la toujours bien allumée !',
-  'Carapuce': 'Carapuce ! Sa carapace n\'est pas seulement protectrice, elle réduit aussi sa résistance à l\'eau pour nager très vite !',
-  'Pikachu': 'Pikachu ! Il stocke de l\'électricité dans ses joues. S\'il est irrité, il peut libérer de puissantes décharges !',
-  'Rondoudou': 'Rondoudou ! Ses yeux ronds fascinent sa cible avant qu\'il n\'entonne une douce berceuse qui endort tout le monde !',
-  'Miaouss': 'Miaouss ! Il adore tout ce qui brille, en particulier les pièces de monnaie. C\'est un vrai petit rôdeur nocturne !',
-  'Psykokwak': 'Psykokwak ! Il est constamment sujet à des maux de tête. Quand la douleur s\'accentue, il utilise d\'étranges pouvoirs psy !',
-  'Ectoplasma': 'Ectoplasma ! Il se cache dans l\'ombre pour surprendre ses proies. Si tu ressens un frisson soudain, il est sûrement là !',
-  'Magicarp': 'Magicarp ! On dit qu\'il est le Pokémon le plus faible au monde... Pourtant, sa ténacité et son évolution sont légendaires !',
-  'Léviator': 'Léviator ! Un Pokémon d\'une brutalité incroyable. Il apparaît dans les récits de tempêtes pour tout détruire !',
-  'Metamorph': 'Metamorph ! Il peut modifier sa structure moléculaire pour copier l\'apparence exacte de n\'importe quel Pokémon !',
-  'Évoli': 'Évoli ! Son code génétique instable lui permet de s\'adapter et d\'évoluer de huit façons différentes !',
-  'Ronflex': 'Ronflex ! Son estomac résiste à toutes les toxines. Il ne s\'arrête de dormir que pour manger des montagnes de nourriture !',
-  'Mewtwo': 'Mewtwo ! Créé artificiellement par des scientifiques à partir de Mew. Son cœur est froid et son pouvoir psychique immense !',
-  'Mew': 'Mew ! Un Pokémon fabuleux et extrêmement rare. On raconte qu\'il contient l\'ADN originel de tous les Pokémon !',
-  'Carabaffe': 'Carabaffe ! Sa queue touffue est très prisée comme symbole de longévité. C\'est un nageur agile et très robuste !',
-  'Tortank': 'Tortank ! Les canons à eau sur sa carapace peuvent percer l\'acier trempé. Un colosse des océans !',
-  'Reptincel': 'Reptincel ! Il possède un tempérament bagarreur. Au combat, il lacère ses ennemis avec ses griffes acérées !',
-  'Dracaufeu': 'Dracaufeu ! Ses ailes lui permettent de voler très haut. Il crache un feu si chaud qu\'il peut faire fondre la roche !',
-  'Herbizarre': 'Herbizarre ! La force de ses pattes soutient le bourgeon sur son dos. Quand il est prêt à fleurir, il dégage un parfum doux !',
-  'Florizarre': 'Florizarre ! Sa fleur s\'épanouit sous le soleil. Le parfum qui s\'en dégage apaise les Pokémon alentour.'
-}
-
 
 function AppContent() {
   const { user, profile, loading, login, signUp, logout, isAdmin, refreshProfile } = useAuth()
@@ -96,7 +50,8 @@ function AppContent() {
     return localStorage.getItem('theme') || 'blueblack'
   })
   const [designMode, setDesignMode] = useState(() => {
-    return localStorage.getItem('designMode') || 'retro'
+    const saved = localStorage.getItem('designMode')
+    return (saved === 'retro' || saved === 'minimalist') ? saved : 'retro'
   })
   const [enableCrt, setEnableCrt] = useState(false)
   const [avatarLoading, setAvatarLoading] = useState(false)
@@ -131,31 +86,31 @@ function AppContent() {
     let sprite
     switch (newTheme) {
       case 'blueblack':
-        text = "CHEN : L'édition BLUE & BLACK ! Un thème sombre et confortable, parfait pour les longues sessions de mèmes !"
+        text = "CHEN : L'édition MIDNIGHT BLUE ! Un thème sombre, profond et confortable pour les longues sessions nocturnes !"
         sprite = oakGen1rb
         break
       case 'dmg':
-        text = "CHEN : Oh, la nostalgie de la Game Boy originale (DMG-01) ! Quel affichage magnifique !"
+        text = "CHEN : La nostalgie de la Game Boy originale (DMG-01) ! Une esthétique rétro-pixel inimitable !"
         sprite = oakGen1
         break
       case 'red':
-        text = "CHEN : La version ROUGE ! Prépare-toi à une aventure intense à nos côtés !"
+        text = "CHEN : Le style CRIMSON RED ! Une ambiance sombre et mystérieuse aux nuances rubis intenses !"
         sprite = oakGen1rb
         break
       case 'blue':
-        text = "CHEN : La version BLEUE ! Une aventure gravée dans nos mémoires de Dresseur !"
+        text = "CHEN : Le thème NORDIC BLUE ! Inspiré des couleurs arctiques froides et épurées, un régal pour les yeux !"
         sprite = oakGen1rb
         break
       case 'yellow':
-        text = "CHEN : La version JAUNE ! L'édition spéciale où Pikachu marche à tes côtés !"
+        text = "CHEN : Le thème CYBERPUNK AMBER ! Un contraste saisissant entre noir profond et lueurs dorées rétrofuturistes !"
         sprite = oakGen1
         break
       case 'black':
-        text = "CHEN : La version NOIRE ! Une obscurité absolue pour un style sobre, moderne et ultra-minimaliste !"
+        text = "CHEN : L'édition OBSIDIAN BLACK ! Un noir OLED absolu pour un style sobre, moderne et ultra-minimaliste !"
         sprite = oakGen3
         break
       default:
-        text = "CHEN : Le style CLASSIQUE ! Idéal pour la création de mèmes modernes et épurés !"
+        text = "CHEN : Le style CLASSIC CREAM ! Un fond papier chaleureux et réconfortant rappelant les manuels d'époque !"
         sprite = oakGen3
         break
     }
@@ -168,9 +123,7 @@ function AppContent() {
     let text
     let sprite = getOakSpriteForTheme(theme)
     if (newMode === 'minimalist') {
-      text = "CHEN : Le style MINIMALISTE ! Un design épuré, classique et moderne pour naviguer avec élégance !"
-    } else if (newMode === 'glass') {
-      text = "CHEN : Le style LIQUID GLASS ! Une interface futuriste en verre dépoli avec de magnifiques effets de lumière et lueurs néon !"
+      text = "CHEN : Le style MINIMALISTE ! Un design épuré, classique et moderne avec lévitation fluide et surbrillance lumineuse !"
     } else {
       text = "CHEN : Le style RÉTRO ! La puissance des pixels et des consoles d'époque !"
     }
@@ -180,14 +133,12 @@ function AppContent() {
   const handleDesignModeCycle = () => {
     let nextMode = 'retro'
     if (designMode === 'retro') nextMode = 'minimalist'
-    else if (designMode === 'minimalist') nextMode = 'glass'
     else nextMode = 'retro'
     handleDesignModeChange(nextMode)
   }
 
   const getDesignModeButtonLabel = () => {
     if (designMode === 'retro') return '✨ MINIMALISTE'
-    if (designMode === 'minimalist') return '🔮 GLASS'
     return '👾 RÉTRO'
   }
 
@@ -233,6 +184,7 @@ function AppContent() {
   // Dashboard / Active game State
   const [activeTab, setActiveTab] = useState('play') // 'play', 'upload', 'moderate'
   const [activeLobby, setActiveLobby] = useState(null)
+  const [activeLobbyPhase, setActiveLobbyPhase] = useState(null)
   const [lobbyError, setLobbyError] = useState('')
   const [lobbyLoading, setLobbyLoading] = useState(false)
   const [onlinePlayers, setOnlinePlayers] = useState([])
@@ -425,6 +377,7 @@ function AppContent() {
     try {
       const { lobby } = await joinOrCreateGlobalLobby(user.id)
       setActiveLobby(lobby)
+      setActiveLobbyPhase(null)
     } catch (err) {
       console.error(err)
       setLobbyError(err.message || 'Impossible de rejoindre le salon.')
@@ -435,6 +388,7 @@ function AppContent() {
 
   const handleGameStarted = (updatedLobby) => {
     setActiveLobby(updatedLobby)
+    setActiveLobbyPhase(null)
   }
 
   const handleLeaveLobby = async () => {
@@ -446,6 +400,7 @@ function AppContent() {
       }
     }
     setActiveLobby(null)
+    setActiveLobbyPhase(null)
   }
 
   const handleKickPlayer = async (lobbyId, playerProfileId) => {
@@ -703,13 +658,6 @@ function AppContent() {
                   >
                     ✨ MINIMALISTE
                   </RetroButton>
-                  <RetroButton 
-                    onClick={() => handleDesignModeChange('glass')} 
-                    theme={theme}
-                    style={designMode === 'glass' ? { outline: '3px dotted var(--border)', fontWeight: 'bold' } : { opacity: 0.6 }}
-                  >
-                    🔮 GLASS
-                  </RetroButton>
                 </div>
               </div>
 
@@ -720,25 +668,25 @@ function AppContent() {
                 </span>
                 <div className="theme-selector-container" style={{ margin: 0, justifyContent: 'center' }}>
                   <RetroButton onClick={() => handleThemeChange('blueblack')} theme="blueblack" style={theme === 'blueblack' ? { outline: '4px dotted #3b82f6' } : {}}>
-                    ✦ BLUE & BLACK
+                    ✦ MIDNIGHT BLUE
                   </RetroButton>
                   <RetroButton onClick={() => handleThemeChange('black')} theme="black" style={theme === 'black' ? { outline: '4px dotted #ffffff' } : {}}>
-                    ✦ BLACK EDITION
+                    ✦ OBSIDIAN BLACK
                   </RetroButton>
                   <RetroButton onClick={() => handleThemeChange('default')} theme="default" style={theme === 'default' ? { outline: '4px dotted var(--border)' } : {}}>
-                    CLASSIC
+                    CLASSIC CREAM
                   </RetroButton>
                   <RetroButton onClick={() => handleThemeChange('dmg')} theme="dmg" style={theme === 'dmg' ? { outline: '4px dotted var(--border)' } : {}}>
-                    DMG GREEN
+                    GAME BOY DMG
                   </RetroButton>
                   <RetroButton onClick={() => handleThemeChange('red')} theme="red" style={theme === 'red' ? { outline: '4px dotted var(--border)' } : {}}>
-                    RED
+                    CRIMSON RED
                   </RetroButton>
                   <RetroButton onClick={() => handleThemeChange('blue')} theme="blue" style={theme === 'blue' ? { outline: '4px dotted var(--border)' } : {}}>
-                    BLUE
+                    NORDIC BLUE
                   </RetroButton>
                   <RetroButton onClick={() => handleThemeChange('yellow')} theme="yellow" style={theme === 'yellow' ? { outline: '4px dotted var(--border)' } : {}}>
-                    YELLOW
+                    CYBERPUNK AMBER
                   </RetroButton>
                 </div>
               </div>
@@ -752,11 +700,30 @@ function AppContent() {
   // ============================================================================
   // RENDER ACTIVE GAME SCREEN
   // ============================================================================
+  const getDisplayStatus = () => {
+    if (!activeLobby) return ''
+    if (activeLobby.status === 'lobby') return 'SALON'
+    
+    const phase = activeLobbyPhase || 'writing'
+    switch (phase) {
+      case 'writing':
+        return 'CRÉATION'
+      case 'voting':
+        return 'VOTE'
+      case 'results':
+        return 'RÉSULTATS'
+      case 'ended':
+        return 'PODIUM'
+      default:
+        return phase.toUpperCase()
+    }
+  }
+
   if (activeLobby) {
     return (
       <>
         <RetroCrt scanlines={enableCrt} flicker={enableCrt} vignette={enableCrt} />
-        <RetroHeader title={`SALON: ${activeLobby.code}`} subtitle={`STATUT: ${activeLobby.status.toUpperCase()}`} theme={theme}>
+        <RetroHeader title={`SALON: ${activeLobby.code}`} subtitle={`STATUT: ${getDisplayStatus()}`} theme={theme}>
           <button 
             className="retro-btn" 
             onClick={handleDesignModeCycle} 
@@ -797,6 +764,7 @@ function AppContent() {
               onLeave={handleLeaveLobby}
               onLobbyUpdate={handleLobbyUpdate}
               theme={theme}
+              onPhaseChange={setActiveLobbyPhase}
             />
           )}
         </section>
@@ -886,7 +854,7 @@ function AppContent() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px', width: '100%', boxSizing: 'border-box' }} className="editor-grid">
           {/* Left card: Trainer summary */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="dashboard-sidebar">
-            <RetroBox title="CARTE DRESSEUR" theme={theme}>
+            <RetroBox title="CARTE DRESSEUR" theme={theme} className="main-card">
               <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                 {profile?.avatar_url ? (
                   <img 
@@ -932,7 +900,7 @@ function AppContent() {
               </div>
             </RetroBox>
 
-            <RetroBox title="CHOISIR MON AVATAR" theme={theme}>
+            <RetroBox title="CHOISIR MON AVATAR" theme={theme} className="main-card">
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', maxHeight: '180px', overflowY: 'auto', padding: '4px' }}>
                 {POKEMON_AVATARS.map((p) => (
                   <img
@@ -957,7 +925,7 @@ function AppContent() {
               </div>
             </RetroBox>
 
-            <RetroBox title="ÉDITIONS & STYLE DE JEU" theme={theme}>
+            <RetroBox title="ÉDITIONS & STYLE DE JEU" theme={theme} className="main-card">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 {/* Design Mode Selection */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -979,13 +947,6 @@ function AppContent() {
                     >
                       ✨ MINI
                     </RetroButton>
-                    <RetroButton 
-                      onClick={() => handleDesignModeChange('glass')} 
-                      theme={theme}
-                      style={{ flex: '1 1 60px', padding: '8px 4px', fontSize: '10px', ...(designMode === 'glass' ? { outline: '3px dotted var(--border)' } : { opacity: 0.7 }) }}
-                    >
-                      🔮 GLASS
-                    </RetroButton>
                   </div>
                 </div>
 
@@ -998,25 +959,25 @@ function AppContent() {
                   </span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <RetroButton onClick={() => handleThemeChange('blueblack')} theme="blueblack" style={theme === 'blueblack' ? { outline: '3px dotted #3b82f6' } : {}}>
-                      ✦ BLUE & BLACK
+                      ✦ MIDNIGHT BLUE
                     </RetroButton>
                     <RetroButton onClick={() => handleThemeChange('black')} theme="black" style={theme === 'black' ? { outline: '3px dotted #ffffff' } : {}}>
-                      ✦ BLACK EDITION
+                      ✦ OBSIDIAN BLACK
                     </RetroButton>
                     <RetroButton onClick={() => handleThemeChange('default')} theme="default" style={theme === 'default' ? { outline: '4px dotted var(--border)' } : {}}>
-                      CLASSIC
+                      CLASSIC CREAM
                     </RetroButton>
                     <RetroButton onClick={() => handleThemeChange('dmg')} theme="dmg" style={theme === 'dmg' ? { outline: '4px dotted var(--border)' } : {}}>
-                      DMG GREEN
+                      GAME BOY DMG
                     </RetroButton>
                     <RetroButton onClick={() => handleThemeChange('red')} theme="red" style={theme === 'red' ? { outline: '4px dotted var(--border)' } : {}}>
-                      RED VERSION
+                      CRIMSON RED
                     </RetroButton>
                     <RetroButton onClick={() => handleThemeChange('blue')} theme="blue" style={theme === 'blue' ? { outline: '4px dotted var(--border)' } : {}}>
-                      BLUE VERSION
+                      NORDIC BLUE
                     </RetroButton>
                     <RetroButton onClick={() => handleThemeChange('yellow')} theme="yellow" style={theme === 'yellow' ? { outline: '4px dotted var(--border)' } : {}}>
-                      YELLOW
+                      CYBERPUNK AMBER
                     </RetroButton>
                   </div>
                 </div>
@@ -1028,7 +989,7 @@ function AppContent() {
           <div className="dashboard-content">
             {activeTab === 'play' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <RetroBox title="REJOINDRE LE SALON" theme={theme}>
+                <RetroBox title="REJOINDRE LE SALON" theme={theme} className="main-card">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', padding: '10px 0' }}>
                     <div style={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
 
@@ -1043,7 +1004,7 @@ function AppContent() {
                         Cliquez ci-dessous pour vous connecter au salon unique et jouer avec les autres dresseurs !
                       </p>
 
-                      <RetroButton onClick={handleJoinGlobalLobby} disabled={lobbyLoading} theme={theme} style={{ width: '100%' }}>
+                      <RetroButton onClick={handleJoinGlobalLobby} disabled={lobbyLoading} theme={theme} className="btn-join-lobby retro-pulse" style={{ width: '100%' }}>
                         {lobbyLoading ? 'CONNEXION...' : 'REJOINDRE LE SALON'}
                       </RetroButton>
                     </div>

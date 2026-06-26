@@ -175,7 +175,7 @@ export const joinOrCreateGlobalLobby = async (profileId) => {
     if (createError) throw createError
     lobby = newLobby
   } else {
-    // Self-healing: if the lobby exists but has 0 players, reset its status to 'lobby' and round to 0
+    // Self-healing: check player count and reset if the lobby is empty
     const { count, error: countError } = await supabase
       .from('players')
       .select('*', { count: 'exact', head: true })
@@ -184,24 +184,34 @@ export const joinOrCreateGlobalLobby = async (profileId) => {
     if (countError) throw countError
 
     if (count === 0 && lobby.status !== 'lobby') {
-      // Call RPC to reset the lobby securely (bypasses RLS since RPC runs as SECURITY DEFINER)
+      // Reset status and round to 'lobby'/0 when completely empty
       const { error: resetError } = await supabase
         .rpc('reset_lobby_if_empty', { p_lobby_id: lobby.id })
 
       if (resetError) throw resetError
+    }
 
-      // Also clean up any stale memes and votes from the abandoned game
-      const { data: staleMemes } = await supabase
-        .from('memes')
-        .select('id')
-        .eq('lobby_id', lobby.id)
-      if (staleMemes && staleMemes.length > 0) {
-        const staleMemeIds = staleMemes.map(m => m.id)
-        await supabase.from('votes').delete().in('meme_id', staleMemeIds)
-        await supabase.from('memes').delete().eq('lobby_id', lobby.id)
+    // Always clean stale memes/votes when lobby is in 'lobby' status (covers finished games
+    // that ended without going through handleRestartLobby, e.g. crash or window close)
+    const currentStatus = count === 0 && lobby.status !== 'lobby' ? 'lobby' : lobby.status
+    if (currentStatus === 'lobby') {
+      const { error: rpcError } = await supabase.rpc('clear_lobby_memes_and_votes', { p_lobby_id: lobby.id })
+      if (rpcError) {
+        console.warn('RPC clear_lobby_memes_and_votes failed in lobby join, falling back to client delete:', rpcError)
+        const { data: staleMemes } = await supabase
+          .from('memes')
+          .select('id')
+          .eq('lobby_id', lobby.id)
+        if (staleMemes && staleMemes.length > 0) {
+          const staleMemeIds = staleMemes.map(m => m.id)
+          await supabase.from('votes').delete().in('meme_id', staleMemeIds)
+          await supabase.from('memes').delete().eq('lobby_id', lobby.id)
+        }
       }
+    }
 
-      // Refetch the lobby state
+    // Refetch the lobby state to get current values after potential reset
+    if (count === 0 && lobby.status !== 'lobby') {
       const { data: refetchedLobby, error: refetchError } = await supabase
         .from('lobbies')
         .select('*')
@@ -544,32 +554,36 @@ export const getLobbyMemes = async (lobbyId) => {
  * Clear all memes and their associated votes for a lobby (called at start of each new round)
  */
 export const clearLobbyMemesAndVotes = async (lobbyId) => {
-  // 1. Fetch all meme IDs in this lobby
-  const { data: memes, error: memesError } = await supabase
-    .from('memes')
-    .select('id')
-    .eq('lobby_id', lobbyId)
+  const { error } = await supabase.rpc('clear_lobby_memes_and_votes', { p_lobby_id: lobbyId })
+  if (error) {
+    console.warn('RPC clear_lobby_memes_and_votes failed, falling back to client delete:', error)
+    // 1. Fetch all meme IDs in this lobby
+    const { data: memes, error: memesError } = await supabase
+      .from('memes')
+      .select('id')
+      .eq('lobby_id', lobbyId)
 
-  if (memesError) throw memesError
+    if (memesError) throw memesError
 
-  // 2. Delete all votes for these memes
-  if (memes && memes.length > 0) {
-    const memeIds = memes.map(m => m.id)
-    const { error: votesError } = await supabase
-      .from('votes')
+    // 2. Delete all votes for these memes
+    if (memes && memes.length > 0) {
+      const memeIds = memes.map(m => m.id)
+      const { error: votesError } = await supabase
+        .from('votes')
+        .delete()
+        .in('meme_id', memeIds)
+
+      if (votesError) throw votesError
+    }
+
+    // 3. Delete all memes in this lobby
+    const { error: deleteMemesError } = await supabase
+      .from('memes')
       .delete()
-      .in('meme_id', memeIds)
+      .eq('lobby_id', lobbyId)
 
-    if (votesError) throw votesError
+    if (deleteMemesError) throw deleteMemesError
   }
-
-  // 3. Delete all memes in this lobby
-  const { error: deleteMemesError } = await supabase
-    .from('memes')
-    .delete()
-    .eq('lobby_id', lobbyId)
-
-  if (deleteMemesError) throw deleteMemesError
 }
 
 // ============================================================================
@@ -775,3 +789,50 @@ export const getAllPlayersStats = async () => {
   return data
 }
 
+// ============================================================================
+// 7. HALL OF FAME SERVICES
+// ============================================================================
+
+/**
+ * Save the winning meme of a round to the hall of fame
+ */
+export const saveWinningMemeToHallOfFame = async ({
+  imageUrl,
+  templateName,
+  textZones,
+  winnerProfileId,
+  winnerUsername,
+  winnerAvatarUrl,
+  scoreEarned,
+}) => {
+  const { data, error } = await supabase
+    .from('meme_hall_of_fame')
+    .insert({
+      image_url: imageUrl,
+      template_name: templateName || 'Mème sans titre',
+      text_zones: textZones || [],
+      winner_profile_id: winnerProfileId || null,
+      winner_username: winnerUsername || 'Anonyme',
+      winner_avatar_url: winnerAvatarUrl || null,
+      score_earned: scoreEarned || 0,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+/**
+ * Fetch the last N winning memes from the hall of fame
+ */
+export const getHallOfFame = async (limit = 10) => {
+  const { data, error } = await supabase
+    .from('meme_hall_of_fame')
+    .select('*')
+    .order('won_at', { ascending: false })
+    .limit(limit)
+
+  if (error) throw error
+  return data || []
+}

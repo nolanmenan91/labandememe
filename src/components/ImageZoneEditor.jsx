@@ -704,7 +704,7 @@ export default function ImageZoneEditor({
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <RetroBox title="ÉDITEUR DE ZONE D'IMAGE" theme={theme}>
+    <RetroBox title="ÉDITEUR DE ZONE D'IMAGE" theme={theme} className="main-card">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <p style={{ margin: 0, fontSize: '18px' }}>
           Importez une image, recadrez-la si besoin, puis dessinez des zones de texte ou des bulles de BD.

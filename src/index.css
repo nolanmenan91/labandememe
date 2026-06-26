@@ -5,28 +5,29 @@
   --font-press-start: 'Press Start 2P', monospace;
   --font-vt323: 'VT323', monospace;
 
-  /* Default GBC/Pokémon Dialogue Box Palette (Light Mode) */
-  --bg: #f3f3f3;
-  --text: #000000;
-  --text-h: #000000;
-  --border: #000000;
-  --code-bg: #e0e0e0;
-  --social-bg: #e0e0e0;
+  /* Upgraded Classic Cream Theme (Light Mode) */
+  --bg: #fdfbf7;
+  --text: #1a1a1a;
+  --text-h: #111111;
+  --border: #1a1a1a;
+  --code-bg: #f3efe5;
+  --social-bg: #f3efe5;
   
-  --accent: #306230; /* DMG dark green */
-  --accent-bg: #8bac0f; /* DMG light green */
-  --accent-border: #306230;
+  --accent: #e05a47; /* Warm terracotta orange */
+  --accent-bg: #faebe8; /* Soft terracotta cream */
+  --accent-border: #e05a47;
+  --accent-glow: rgba(224, 90, 71, 0.25);
   
-  --shadow: 6px 6px 0px 0px #000000;
+  --shadow: 6px 6px 0px 0px #1a1a1a;
 
   --sans: var(--font-vt323);
   --heading: var(--font-press-start);
   --mono: var(--font-press-start);
 
   /* Retro Dialog Box specific colors */
-  --retro-box-bg: #ffffff;
-  --retro-box-border: #000000;
-  --retro-box-shadow: inset 0 0 0 4px #ffffff, inset 0 0 0 8px #000000;
+  --retro-box-bg: #fdfcfb;
+  --retro-box-border: #1a1a1a;
+  --retro-box-shadow: inset 0 0 0 4px #fdfcfb, inset 0 0 0 8px #1a1a1a;
 
   font-family: var(--sans);
   font-size: 22px; /* VT323 reads better at slightly larger font-size */
@@ -38,25 +39,26 @@
   image-rendering: crisp-edges;
 }
 
-/* Dark Mode - Retro Arcade / Pokémon Dark Theme */
+/* Dark Mode - Polished Default Dark Theme */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #121212;
-    --text: #ffffff;
+    --bg: #0f1115;
+    --text: #eceff4;
     --text-h: #ffffff;
-    --border: #ffffff;
-    --code-bg: #262626;
-    --social-bg: #262626;
+    --border: #3b82f6;
+    --code-bg: #1a1e24;
+    --social-bg: #1a1e24;
     
-    --accent: #8bac0f;
-    --accent-bg: #306230;
-    --accent-border: #8bac0f;
+    --accent: #3b82f6;
+    --accent-bg: #1e3a8a;
+    --accent-border: #60a5fa;
+    --accent-glow: rgba(59, 130, 246, 0.35);
     
-    --shadow: 6px 6px 0px 0px #ffffff;
+    --shadow: 6px 6px 0px 0px #1e3a8a;
     
-    --retro-box-bg: #1a1a1a;
-    --retro-box-border: #ffffff;
-    --retro-box-shadow: inset 0 0 0 4px #1a1a1a, inset 0 0 0 8px #ffffff;
+    --retro-box-bg: #141822;
+    --retro-box-border: #3b82f6;
+    --retro-box-shadow: inset 0 0 0 4px #141822, inset 0 0 0 8px #3b82f6;
   }
 }
 
@@ -64,64 +66,77 @@
 
 /* Classic DMG-01 Game Boy Green Theme */
 .theme-dmg {
-  --bg: #9bbc0f;
+  --bg: #cadc9f;
   --text: #0f380f;
   --text-h: #0f380f;
   --border: #0f380f;
-  --code-bg: #8bac0f;
-  --social-bg: #8bac0f;
+  --code-bg: #b5c988;
+  --social-bg: #b5c988;
   --accent: #306230;
   --accent-bg: #8bac0f;
   --accent-border: #306230;
+  --accent-glow: rgba(48, 98, 48, 0.3);
   --shadow: 6px 6px 0px 0px #0f380f;
   --retro-box-bg: #8bac0f;
   --retro-box-border: #0f380f;
   --retro-box-shadow: inset 0 0 0 4px #8bac0f, inset 0 0 0 8px #0f380f;
 }
 
-/* Pokémon GBC Red Version Theme */
+/* Crimson Red Theme */
 .theme-red {
-  --bg: #fff5f5;
-  --text: #000000;
-  --text-h: #c21a1a;
-  --border: #000000;
-  --code-bg: #ffd1d1;
-  --social-bg: #ffd1d1;
-  --accent: #c21a1a;
-  --accent-bg: #ffb3b3;
-  --accent-border: #c21a1a;
-  --shadow: 6px 6px 0px 0px #c21a1a;
+  --bg: #1a0f11;
+  --text: #f5e6e8;
+  --text-h: #ff4a6b;
+  --border: #ff4a6b;
+  --code-bg: #2d181b;
+  --social-bg: #2d181b;
+  --accent: #ff4a6b;
+  --accent-bg: #4a121a;
+  --accent-border: #ff708a;
+  --accent-glow: rgba(255, 74, 107, 0.35);
+  --shadow: 6px 6px 0px 0px #4a121a;
+  --retro-box-bg: #241417;
+  --retro-box-border: #ff4a6b;
+  --retro-box-shadow: inset 0 0 0 4px #241417, inset 0 0 0 8px #ff4a6b;
 }
 
-/* Pokémon GBC Blue Version Theme */
+/* Nordic Blue Theme */
 .theme-blue {
-  --bg: #f5f5ff;
-  --text: #000000;
-  --text-h: #1a4bc2;
-  --border: #000000;
-  --code-bg: #d1d9ff;
-  --social-bg: #d1d9ff;
-  --accent: #1a4bc2;
-  --accent-bg: #b3c2ff;
-  --accent-border: #1a4bc2;
-  --shadow: 6px 6px 0px 0px #1a4bc2;
+  --bg: #2e3440;
+  --text: #eceff4;
+  --text-h: #88c0d0;
+  --border: #81a1c1;
+  --code-bg: #3b4252;
+  --social-bg: #3b4252;
+  --accent: #88c0d0;
+  --accent-bg: #434c5e;
+  --accent-border: #88c0d0;
+  --accent-glow: rgba(136, 192, 208, 0.35);
+  --shadow: 6px 6px 0px 0px #3b4252;
+  --retro-box-bg: #3b4252;
+  --retro-box-border: #81a1c1;
+  --retro-box-shadow: inset 0 0 0 4px #3b4252, inset 0 0 0 8px #81a1c1;
 }
 
-/* Pokémon GBC Yellow Version Theme */
+/* Cyberpunk Amber Theme */
 .theme-yellow {
-  --bg: #fffff0;
-  --text: #000000;
-  --text-h: #bda200;
-  --border: #000000;
-  --code-bg: #fff6bd;
-  --social-bg: #fff6bd;
-  --accent: #bda200;
-  --accent-bg: #ffea85;
-  --accent-border: #bda200;
-  --shadow: 6px 6px 0px 0px #000000;
+  --bg: #121214;
+  --text: #e3e3e6;
+  --text-h: #f3b33e;
+  --border: #f3b33e;
+  --code-bg: #1a1a1e;
+  --social-bg: #1a1a1e;
+  --accent: #f3b33e;
+  --accent-bg: #2a2012;
+  --accent-border: #f5c26b;
+  --accent-glow: rgba(243, 179, 62, 0.3);
+  --shadow: 6px 6px 0px 0px #2a2012;
+  --retro-box-bg: #1a1a1e;
+  --retro-box-border: #f3b33e;
+  --retro-box-shadow: inset 0 0 0 4px #1a1a1e, inset 0 0 0 8px #f3b33e;
 }
 
-/* Pok\u00e9mon Blue & Black Version Theme (Default) */
+/* Midnight Blue Theme */
 .theme-blueblack {
   --bg: #070b19;
   --text: #cbd5e1;
@@ -132,24 +147,14 @@
   --accent: #3b82f6;
   --accent-bg: #1e3a5f;
   --accent-border: #60a5fa;
+  --accent-glow: rgba(59, 130, 246, 0.35);
   --shadow: 6px 6px 0px 0px #1e40af;
   --retro-box-bg: #0d1a2e;
   --retro-box-border: #3b82f6;
   --retro-box-shadow: inset 0 0 0 4px #0d1a2e, inset 0 0 0 8px #3b82f6;
 }
 
-.theme-blueblack .retro-input {
-  background-color: #0d1a2e;
-  color: #cbd5e1;
-}
-
-.theme-blueblack .retro-input:focus {
-  background-color: #0f172a;
-  border-color: #60a5fa;
-  box-shadow: inset 3px 3px 0px 0px rgba(0, 0, 0, 0.4), 0 0 0 4px #1e3a5f;
-}
-
-/* Pure Midnight Black Theme */
+/* Pure Obsidian Black Theme */
 .theme-black {
   --bg: #000000;
   --text: #e5e5e5;
@@ -159,22 +164,12 @@
   --social-bg: #121212;
   --accent: #ffffff;
   --accent-bg: #1c1c1c;
-  --accent-border: #444444;
-  --shadow: 6px 6px 0px 0px #333333;
+  --accent-border: #e5e5e5;
+  --accent-glow: rgba(255, 255, 255, 0.2);
+  --shadow: 6px 6px 0px 0px #1c1c1c;
   --retro-box-bg: #0a0a0a;
   --retro-box-border: #333333;
   --retro-box-shadow: inset 0 0 0 4px #0a0a0a, inset 0 0 0 8px #333333;
-}
-
-.theme-black .retro-input {
-  background-color: #0a0a0a;
-  color: #e5e5e5;
-}
-
-.theme-black .retro-input:focus {
-  background-color: #121212;
-  border-color: #ffffff;
-  box-shadow: inset 3px 3px 0px 0px rgba(0, 0, 0, 0.4), 0 0 0 4px #262626;
 }
 
 /* --- BASE STYLES --- */
@@ -516,6 +511,21 @@ code {
   animation: retro-bounce 0.6s steps(4, end) infinite;
 }
 
+@keyframes retro-pulse {
+  0%, 100% {
+    filter: brightness(1);
+    transform: translate(0, 0);
+  }
+  50% {
+    filter: brightness(1.2);
+    transform: translate(-2px, -2px);
+  }
+}
+
+.retro-pulse {
+  animation: retro-pulse 1.2s infinite ease-in-out;
+}
+
 /* --- MOBILE RESPONSIVENESS (GRIDS) --- */
 @media (max-width: 768px) {
   .editor-grid, .game-grid {
@@ -567,13 +577,12 @@ code {
 }
 
 /* Custom background adjustments for dark/light themes in minimalist root */
-body.design-minimalist.theme-blueblack #root {
-  background: rgba(7, 11, 25, 0.95) !important;
+#root.design-minimalist {
+  background-color: var(--bg) !important;
 }
 
 body.design-minimalist.theme-default #root,
-body.design-minimalist.theme-dmg #root,
-body.design-minimalist.theme-yellow #root {
+body.design-minimalist.theme-dmg #root {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06) !important;
 }
 
@@ -683,18 +692,7 @@ body.design-minimalist.theme-yellow #root {
 
 .design-minimalist .retro-input:focus {
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15) !important;
-}
-
-/* Adapt focus ring glow colors based on theme if needed */
-body.design-minimalist.theme-red .retro-input:focus {
-  box-shadow: 0 0 0 3px rgba(194, 26, 26, 0.15) !important;
-}
-body.design-minimalist.theme-dmg .retro-input:focus {
-  box-shadow: 0 0 0 3px rgba(48, 98, 48, 0.15) !important;
-}
-body.design-minimalist.theme-black .retro-input:focus {
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 0 0 3px var(--accent-glow) !important;
 }
 
 .design-minimalist .retro-input-label {
@@ -777,9 +775,7 @@ body.design-minimalist.theme-black .retro-input:focus {
   background-color: rgba(255, 255, 255, 0.06) !important;
 }
 body.design-minimalist.theme-default .retro-header-nav .retro-btn:hover:not(.active),
-body.design-minimalist.theme-red .retro-header-nav .retro-btn:hover:not(.active),
-body.design-minimalist.theme-blue .retro-header-nav .retro-btn:hover:not(.active),
-body.design-minimalist.theme-yellow .retro-header-nav .retro-btn:hover:not(.active) {
+body.design-minimalist.theme-dmg .retro-header-nav .retro-btn:hover:not(.active) {
   background-color: rgba(0, 0, 0, 0.04) !important;
 }
 
@@ -815,352 +811,349 @@ body.design-minimalist.theme-yellow .retro-header-nav .retro-btn:hover:not(.acti
     border-bottom: 1px solid var(--accent-border) !important;
   }
 }
-
 /* ══════════════════════════════════════════════════════════════
-   GLASS DESIGN MODE OVERRIDES — inspired by compta project
+   MINIMALIST MAIN CARDS REFIT (GLOW SURBRILLANCE & CLICK DEPTH)
    ══════════════════════════════════════════════════════════════ */
 
-/* Clean dark background for Glass mode body */
-body.design-glass {
-  background-color: #05050a !important;
-  background-image: radial-gradient(circle at 50% 0%, rgba(20, 20, 35, 0.6) 0%, transparent 60%),
-                    radial-gradient(circle at 100% 100%, rgba(10, 10, 20, 0.5) 0%, transparent 50%) !important;
-  background-attachment: fixed !important;
-}
-
-/* Apply modern font and reset uppercase under design-glass */
-.design-glass,
-.design-glass input,
-.design-glass button,
-.design-glass select,
-.design-glass textarea,
-.design-glass p,
-.design-glass span,
-.design-glass h1,
-.design-glass h2,
-.design-glass h3,
-.design-glass h4,
-.design-glass h5,
-.design-glass h6,
-.design-glass div,
-.design-glass label,
-.design-glass a {
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif !important;
-}
-
-.design-glass h1,
-.design-glass h2,
-.design-glass h3,
-.design-glass h4,
-.design-glass h5,
-.design-glass h6 {
-  text-transform: none !important;
-  letter-spacing: normal !important;
-  font-weight: 700 !important;
-}
-
-/* Hide CRT and scanlines in glass mode */
-.design-glass .scanlines,
-.design-glass .crt-flicker,
-.design-glass .crt-vignette {
-  display: none !important;
-  opacity: 0 !important;
-}
-
-/* Root container as a premium liquid glass panel */
-#root.design-glass {
-  background: rgba(10, 10, 15, 0.45) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.8) !important;
-  backdrop-filter: blur(24px) saturate(1.8) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-radius: 24px !important;
-  box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    0 4px 12px rgba(0, 0, 0, 0.4),
-    0 30px 100px rgba(0, 0, 0, 0.8) !important;
-  padding: 24px !important;
-  margin: 40px auto !important;
-  box-sizing: border-box !important;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
-@media (max-width: 1024px) {
-  #root.design-glass {
-    margin: 0 !important;
-    border-radius: 0 !important;
-    border: none !important;
-    min-height: 100vh !important;
-    background: rgba(5, 5, 8, 0.95) !important;
-  }
-}
-
-/* Glassmorphic Cards (retro-box in glass mode) */
-.design-glass .retro-box {
-  background: rgba(10, 10, 15, 0.6) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  -webkit-backdrop-filter: blur(40px) !important;
-  backdrop-filter: blur(40px) !important;
+/* Style de surbrillance dégradée pour les cartes minimalistes principales (effet flottant statique) */
+.design-minimalist .retro-box.main-card {
+  border: 1px solid transparent !important;
   border-radius: 16px !important;
-  box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 15px 35px rgba(0, 0, 0, 0.4) !important;
-  padding: 24px !important;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  background-clip: padding-box !important;
   position: relative !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  transition: transform 0.15s cubic-bezier(0.25, 0.8, 0.25, 1), 
+              box-shadow 0.2s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
 }
 
-.design-glass .retro-box::after,
-.design-glass .retro-box::before {
-  box-shadow: none !important;
+/* Bordure dégradée fine (surbrillance) */
+.design-minimalist .retro-box.main-card::before {
+  content: "";
+  position: absolute;
+  top: -1.5px;
+  left: -1.5px;
+  right: -1.5px;
+  bottom: -1.5px;
+  background: linear-gradient(135deg, 
+    var(--accent) 0%, 
+    color-mix(in srgb, var(--accent) 60%, var(--border)) 50%, 
+    var(--border) 100%
+  ) !important;
+  border-radius: 17.5px !important;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
 }
 
-/* Override inner double-border variable */
-.design-glass .retro-box {
-  --retro-box-shadow: none !important;
-  --retro-box-border: transparent !important;
+/* Halo lumineux en arrière-plan (crée l'illusion de flottement/détachement du fond) */
+.design-minimalist .retro-box.main-card::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, 
+    var(--accent) 0%, 
+    color-mix(in srgb, var(--accent) 60%, var(--border)) 50%, 
+    var(--border) 100%
+  ) !important;
+  border-radius: 18px !important;
+  z-index: -2;
+  pointer-events: none;
+  filter: blur(12px);
+  opacity: 0.3;
+  transition: opacity 0.3s ease, filter 0.3s ease;
 }
 
-/* Card Badge Title */
-.design-glass .retro-box-title {
-  position: absolute !important;
-  top: -12px !important;
-  left: 20px !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-radius: 12px !important;
-  padding: 2px 10px !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-  backdrop-filter: blur(10px) !important;
-  color: var(--accent) !important;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
+/* Survol (hover) interactif - renforce la luminosité mais sans déplacement */
+.design-minimalist .retro-box.main-card:hover {
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25), 0 0 25px color-mix(in srgb, var(--accent) 25%, transparent) !important;
 }
 
-.design-glass .retro-box-cursor {
-  display: none !important;
+.design-minimalist .retro-box.main-card:hover::before {
+  opacity: 1;
 }
 
-/* Premium Apple-style Glass Buttons */
-.design-glass .retro-btn {
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  background: rgba(255, 255, 255, 0.06) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  padding: 10px 18px !important;
-  border-radius: 12px !important;
-  box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 4px 12px rgba(0, 0, 0, 0.2) !important;
-  transform: none !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.02em !important;
+.design-minimalist .retro-box.main-card:hover::after {
+  opacity: 0.55;
+  filter: blur(16px);
 }
 
-.design-glass .retro-btn::after {
-  display: none !important;
+/* Effet au clic (active) - sensation physique de pression */
+.design-minimalist .retro-box.main-card:active {
+  transform: scale(0.985) !important;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
+  transition: transform 0.1s ease, box-shadow 0.1s ease !important;
 }
 
-/* Hover and active states for glass buttons */
-.design-glass .retro-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.12) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
+.design-minimalist .retro-box.main-card:active::after {
+  opacity: 0.2;
+  filter: blur(8px);
+}
+
+/* --- LOBBY BUTTONS ACCENT OVERRIDES (ALL DESIGNS) --- */
+
+/* Ready Toggle Button (NOT READY: Highlight Green) */
+.retro-btn.btn-ready-toggle {
+  background-color: #22c55e !important;
+  background: #22c55e !important;
   color: #ffffff !important;
-  box-shadow: 
-    0 12px 30px rgba(0, 0, 0, 0.3),
-    0 0 20px rgba(255, 255, 255, 0.05) !important;
-  transform: translateY(-1px) !important;
+  border-color: #16a34a !important;
+  box-shadow: 6px 6px 0px #15803d !important;
+}
+.retro-btn.btn-ready-toggle:hover:not(:disabled) {
+  background-color: #16a34a !important;
+  background: #16a34a !important;
 }
 
-.design-glass .retro-btn:active:not(:disabled) {
-  transform: translateY(1px) scale(0.97) !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
-}
-
-.design-glass .retro-btn:disabled {
-  opacity: 0.35 !important;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-/* Glass Form Inputs */
-.design-glass .retro-input {
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  background: rgba(255, 255, 255, 0.03) !important;
+/* Ready Toggle Button (READY: Neutral Slate/Dark) */
+.retro-btn.btn-ready-toggle.is-ready {
+  background-color: #4a5568 !important;
+  background: #4a5568 !important;
   color: #ffffff !important;
-  border-radius: 10px !important;
-  padding: 10px 14px !important;
-  font-size: 15px !important;
-  box-shadow: none !important;
-  transition: all 0.2s ease !important;
+  border-color: #2d3748 !important;
+  box-shadow: 4px 4px 0px #1a202c !important;
+}
+.retro-btn.btn-ready-toggle.is-ready:hover:not(:disabled) {
+  background-color: #2d3748 !important;
+  background: #2d3748 !important;
 }
 
-.design-glass .retro-input:focus {
-  border-color: var(--accent) !important;
-  background: rgba(255, 255, 255, 0.06) !important;
-  box-shadow: 
-    0 0 0 4px rgba(255, 255, 255, 0.06),
-    0 0 15px color-mix(in srgb, var(--accent) 30%, transparent) !important;
+/* Start Game Button (READY/ACTIVE: Highlight Amber/Yellow) */
+.retro-btn.btn-start-game {
+  background-color: #eab308 !important;
+  background: #eab308 !important;
+  color: #000000 !important;
+  border-color: #ca8a04 !important;
+  box-shadow: 6px 6px 0px #a16207 !important;
+}
+.retro-btn.btn-start-game:hover:not(:disabled) {
+  background-color: #ca8a04 !important;
+  background: #ca8a04 !important;
 }
 
-.design-glass .retro-input-label {
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.04em !important;
-  color: var(--accent) !important;
+/* Start Game Button (DISABLED) */
+.retro-btn.btn-start-game:disabled {
+  opacity: 0.5 !important;
+  filter: grayscale(1) !important;
+  cursor: not-allowed !important;
 }
 
-/* Glass Header Panel */
-.design-glass .retro-header-container {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-  background: rgba(255, 255, 255, 0.01) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-  backdrop-filter: blur(10px) !important;
-  border-top-left-radius: 24px !important;
-  border-top-right-radius: 24px !important;
-  padding: 16px 24px !important;
+/* Glass and Minimalist Mode Specific Adjustments */
+.design-minimalist .retro-btn.btn-ready-toggle {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3) !important;
+  border: 1px solid #16a34a !important;
 }
-
-.design-glass .retro-header-title {
-  font-size: 20px !important;
-  font-weight: 800 !important;
-  color: #ffffff !important;
-  text-shadow: 0 0 20px color-mix(in srgb, var(--accent) 40%, transparent) !important;
-  margin: 0 !important;
-}
-
-.design-glass .retro-header-subtitle {
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  color: var(--accent) !important;
-  letter-spacing: 0.08em !important;
-  margin: 0 !important;
-}
-
-/* Trainer summary avatar in glass mode */
-.design-glass img[alt="Avatar"],
-.design-glass .oak-avatar-img {
-  border-radius: 50% !important;
-  border: 2px solid rgba(255, 255, 255, 0.15) !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
-  background: rgba(255, 255, 255, 0.03) !important;
-  padding: 2px !important;
-}
-
-.design-glass .oak-badge {
-  border-radius: 12px !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
-  font-weight: 600 !important;
-  background: rgba(255, 255, 255, 0.06) !important;
-  font-size: 9px !important;
-  color: var(--text-h) !important;
-}
-
-/* speech bubbles override */
-.design-glass .retro-speech-bubble::before,
-.design-glass .retro-speech-bubble::after {
-  display: none !important;
-}
-
-.design-glass .retro-speech-bubble .retro-box {
-  border-radius: 16px !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-}
-
-/* Header nav bar */
-.design-glass .retro-header-nav .retro-btn {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+.design-minimalist .retro-btn.btn-ready-toggle.is-ready {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
   color: rgba(255, 255, 255, 0.6) !important;
-  border-radius: 20px !important;
-  font-weight: 600 !important;
-  padding: 8px 16px !important;
-  font-size: 11px !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: none !important;
 }
 
-.design-glass .retro-header-nav .retro-btn.active {
-  background: rgba(255, 255, 255, 0.08) !important;
+.design-minimalist .retro-btn.btn-start-game {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.3) !important;
+  border: 1px solid #ca8a04 !important;
+}
+
+/* Join Lobby Button Override (Vibrant Yellow Gold) */
+.retro-btn.btn-join-lobby {
+  background-color: #eab308 !important;
+  background: #eab308 !important;
+  color: #000000 !important;
+  border-color: #ca8a04 !important;
+  box-shadow: 6px 6px 0px #a16207 !important;
+}
+.retro-btn.btn-join-lobby:hover:not(:disabled) {
+  background-color: #ca8a04 !important;
+  background: #ca8a04 !important;
+}
+.design-minimalist .retro-btn.btn-join-lobby {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.3) !important;
+  border: 1px solid #ca8a04 !important;
+  color: #000000 !important;
+}
+
+/* Submit Meme Button Override (Vibrant Green) */
+.retro-btn.btn-submit-meme {
+  background-color: #22c55e !important;
+  background: #22c55e !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  border-color: #16a34a !important;
+  box-shadow: 6px 6px 0px #15803d !important;
 }
-
-.design-glass .retro-header-nav .retro-btn:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.04) !important;
+.retro-btn.btn-submit-meme:hover:not(:disabled) {
+  background-color: #16a34a !important;
+  background: #16a34a !important;
+}
+.design-minimalist .retro-btn.btn-submit-meme {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3) !important;
+  border: 1px solid #16a34a !important;
   color: #ffffff !important;
 }
 
-/* Custom cards content style tweaks */
-.design-glass code {
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 6px !important;
-  background: rgba(0, 0, 0, 0.3) !important;
-  color: #e5e5e5 !important;
-  font-family: 'Fira Code', 'Courier New', Courier, monospace !important;
+/* Leave / Exit Button Override (Vibrant Red) */
+.retro-btn.btn-leave {
+  background-color: #ef4444 !important;
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+  box-shadow: 6px 6px 0px #991b1b !important;
+}
+.retro-btn.btn-leave:hover:not(:disabled) {
+  background-color: #dc2626 !important;
+  background: #dc2626 !important;
+}
+.design-minimalist .retro-btn.btn-leave {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3) !important;
+  border: 1px solid #dc2626 !important;
+  color: #ffffff !important;
 }
 
-.design-glass .editor-grid,
-.design-glass .game-grid {
-  gap: 20px !important;
+/* Vote Submit Button Override (Vibrant Blue/Green) */
+.retro-btn.btn-vote-submit {
+  background-color: #3b82f6 !important;
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+  box-shadow: 6px 6px 0px #1d4ed8 !important;
+}
+.retro-btn.btn-vote-submit:hover:not(:disabled) {
+  background-color: #2563eb !important;
+  background: #2563eb !important;
+}
+.retro-btn.btn-vote-submit.is-voted {
+  background-color: #10b981 !important;
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #059669 !important;
+  box-shadow: 4px 4px 0px #047857 !important;
+}
+.retro-btn.btn-vote-submit.is-voted:hover:not(:disabled) {
+  background-color: #059669 !important;
+  background: #059669 !important;
+}
+.design-minimalist .retro-btn.btn-vote-submit {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3) !important;
+  border: 1px solid #2563eb !important;
+  color: #ffffff !important;
+}
+.design-minimalist .retro-btn.btn-vote-submit.is-voted {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+  border: 1px solid #059669 !important;
+  color: #ffffff !important;
 }
 
-/* Theme accent definitions for glows in glass mode */
-.theme-blueblack {
-  --accent-glow: rgba(59, 130, 246, 0.3);
+/* Next Round / Podium Button Override (Vibrant Purple/Indigo) */
+.retro-btn.btn-next-round,
+.retro-btn.btn-podium {
+  background-color: #8b5cf6 !important;
+  background: #8b5cf6 !important;
+  color: #ffffff !important;
+  border-color: #7c3aed !important;
+  box-shadow: 6px 6px 0px #5b21b6 !important;
 }
-.theme-blue {
-  --accent-glow: rgba(26, 75, 194, 0.3);
+.retro-btn.btn-next-round:hover:not(:disabled),
+.retro-btn.btn-podium:hover:not(:disabled) {
+  background-color: #7c3aed !important;
+  background: #7c3aed !important;
 }
-.theme-red {
-  --accent-glow: rgba(194, 26, 26, 0.3);
-}
-.theme-yellow {
-  --accent-glow: rgba(234, 179, 8, 0.25);
-}
-.theme-dmg {
-  --accent-glow: rgba(48, 98, 48, 0.3);
-}
-.theme-black {
-  --accent-glow: rgba(255, 255, 255, 0.15);
-}
-
-/* Scrollbar styling for glass mode */
-.design-glass ::-webkit-scrollbar {
-  width: 6px;
-}
-.design-glass ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
-}
-.design-glass ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-}
-.design-glass ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+.design-minimalist .retro-btn.btn-next-round,
+.design-minimalist .retro-btn.btn-podium {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3) !important;
+  border: 1px solid #7c3aed !important;
+  color: #ffffff !important;
 }
 
-/* Divider overrides */
-.design-glass #next-steps,
-.design-glass #spacer {
-  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+/* Voting choices button styling (positive, intermediate, negative colors) */
+.retro-btn.vote-btn-masterclass {
+  border-color: #059669 !important;
+}
+.retro-btn.vote-btn-masterclass.is-selected {
+  background-color: #10b981 !important;
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #059669 !important;
+  box-shadow: 4px 4px 0px #047857 !important;
 }
 
-.design-glass #docs {
-  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+.retro-btn.vote-btn-pasmal {
+  border-color: #65a30d !important;
+}
+.retro-btn.vote-btn-pasmal.is-selected {
+  background-color: #84cc16 !important;
+  background: #84cc16 !important;
+  color: #ffffff !important;
+  border-color: #65a30d !important;
+  box-shadow: 4px 4px 0px #4d7c0f !important;
 }
 
-@media (max-width: 1024px) {
-  .design-glass #docs {
-    border-right: none !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-  }
+.retro-btn.vote-btn-mouais {
+  border-color: #d97706 !important;
 }
+.retro-btn.vote-btn-mouais.is-selected {
+  background-color: #f97316 !important;
+  background: #f97316 !important;
+  color: #ffffff !important;
+  border-color: #d97706 !important;
+  box-shadow: 4px 4px 0px #b45309 !important;
+}
+
+.retro-btn.vote-btn-guez {
+  border-color: #dc2626 !important;
+}
+.retro-btn.vote-btn-guez.is-selected {
+  background-color: #ef4444 !important;
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+  box-shadow: 4px 4px 0px #b91c1c !important;
+}
+
+/* Pokeball Bonus Button */
+.retro-btn.btn-pokeball {
+  border-color: var(--border) !important;
+}
+.retro-btn.btn-pokeball.is-selected {
+  background-color: #ffcb05 !important;
+  background: #ffcb05 !important;
+  color: #000000 !important;
+  border-color: #c29900 !important;
+  box-shadow: 4px 4px 0px #947500 !important;
+}
+
+/* Minimalist and Glass layout support for voting selection states */
+.design-minimalist .retro-btn.vote-btn-masterclass.is-selected {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
+}
+.design-minimalist .retro-btn.vote-btn-pasmal.is-selected {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(132, 204, 22, 0.4) !important;
+}
+.design-minimalist .retro-btn.vote-btn-mouais.is-selected {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4) !important;
+}
+.design-minimalist .retro-btn.vote-btn-guez.is-selected {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4) !important;
+}
+.design-minimalist .retro-btn.btn-pokeball.is-selected {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(255, 203, 5, 0.4) !important;
+}
+
+
 

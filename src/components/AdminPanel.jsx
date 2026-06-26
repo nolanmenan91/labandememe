@@ -79,7 +79,7 @@ export default function AdminPanel({ theme = 'default' }) {
   const displayedList = activeSubTab === 'pending' ? pending : allTemplates
 
   return (
-    <RetroBox title="PANEL DE MODÉRATION (CRÉATEUR)" theme={theme}>
+    <RetroBox title="PANEL DE MODÉRATION (CRÉATEUR)" theme={theme} className="main-card">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <p style={{ margin: 0, fontSize: '18px' }}>
           Gérez les modèles de meme de la plateforme. Approuvez les nouveaux modèles ou supprimez les anciens.
