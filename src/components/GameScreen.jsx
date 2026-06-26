@@ -14,6 +14,7 @@ import {
   recordRoundWinners,
   recordRoundVotes,
   saveWinningMemeToHallOfFame,
+  joinLobby,
 } from '../services/db'
 import { RetroBox, RetroButton, RetroInput } from './retro'
 
@@ -892,6 +893,8 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
   const currentRoundPayloadRef = useRef(null) // Stores last START_ROUND payload for late-joiner recovery
   const hasReceivedRoundRef = useRef(false) // True once a START_ROUND broadcast has been received
   const transitioningRef = useRef(false) // Guard against double transitionToVoting calls
+  // Stores the latest voting/results payload so the host can replay them on REQUEST_GAME_STATE
+  const currentGameStateRef = useRef(null)
 
   // Keep phaseRef and other refs in sync with state so closures always see the current values
   useEffect(() => {
@@ -1137,37 +1140,68 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
             if (payload.new.status === 'voting') {
               if (phaseRef.current === 'writing') {
                 hasReceivedRoundRef.current = false // Reset round tracker for next round
-                setPhase('voting')
-                setLoading(true)
-                getLobbyMemes(lobby.id).then(async (memes) => {
-                  let settings = {}
-                  try {
-                    settings = await getLobbySettings(lobby.id)
-                  } catch (e) {}
-                  const votingDuration = settings.voting_duration || lobby.voting_duration || 15
-                  setAllMemes(memes)
-                  setCurrentMemeIndex(0)
-                  setCountdown(votingDuration)
-                  setMyVotes({})
-                  setMyPokeballMemeId(null)
-                  setLoading(false)
-                }).catch(err => {
-                  console.error(err)
-                  setLoading(false)
-                })
+                // Missed START_VOTING broadcast: request full state from host
+                setTimeout(() => {
+                  if (phaseRef.current !== 'voting') {
+                    channelRef.current.send({
+                      type: 'broadcast',
+                      event: 'REQUEST_GAME_STATE',
+                      payload: { requesterId: user.id },
+                    })
+                  }
+                }, 500)
+              }
+            }
+
+            if (payload.new.status === 'results') {
+              if (phaseRef.current === 'voting') {
+                // Missed START_RESULTS broadcast: request full state from host
+                setTimeout(() => {
+                  if (phaseRef.current !== 'results') {
+                    channelRef.current.send({
+                      type: 'broadcast',
+                      event: 'REQUEST_GAME_STATE',
+                      payload: { requesterId: user.id },
+                    })
+                  }
+                }, 500)
+              }
+            }
+
+            if (payload.new.status === 'ended') {
+              if (phaseRef.current !== 'ended') {
+                setPhase('ended')
+                fetchPlayers()
               }
             }
 
             if (payload.new.status === 'writing') {
-              setTimeout(() => {
-                if (phaseRef.current !== 'writing') {
-                  channelRef.current.send({
-                    type: 'broadcast',
-                    event: 'REQUEST_ROUND_STATE',
-                    payload: { requesterId: user.id },
-                  })
-                }
-              }, 1500)
+              // Detect a new round starting (current_round incremented)
+              const newRound = payload.new.current_round
+              const myRound = currentRoundRef.current
+              if (newRound && newRound > myRound && phaseRef.current !== 'writing') {
+                // A new round has started and we haven't received START_ROUND yet
+                setTimeout(() => {
+                  if (phaseRef.current !== 'writing' || currentRoundRef.current < newRound) {
+                    channelRef.current.send({
+                      type: 'broadcast',
+                      event: 'REQUEST_GAME_STATE',
+                      payload: { requesterId: user.id },
+                    })
+                  }
+                }, 1500)
+              } else if (!newRound || newRound <= myRound) {
+                // Same round, just missed the broadcast - use existing REQUEST_ROUND_STATE
+                setTimeout(() => {
+                  if (phaseRef.current !== 'writing') {
+                    channelRef.current.send({
+                      type: 'broadcast',
+                      event: 'REQUEST_ROUND_STATE',
+                      payload: { requesterId: user.id },
+                    })
+                  }
+                }, 1500)
+              }
             }
           }
         }
@@ -1188,6 +1222,38 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
           }
         } catch (e) {
           console.error('Failed to respond to REQUEST_ROUND_STATE:', e)
+        }
+      })
+      .on('broadcast', { event: 'REQUEST_GAME_STATE' }, async () => {
+        // Generic state sync: a reconnecting client asks for the complete current state.
+        // The host responds with whatever phase is currently active.
+        if (!isHostRef.current && !isAdmin) return
+        const currentPhase = phaseRef.current
+        try {
+          if (currentPhase === 'writing' && currentRoundPayloadRef.current) {
+            channelRef.current.send({
+              type: 'broadcast',
+              event: 'START_ROUND',
+              payload: currentRoundPayloadRef.current,
+            })
+          } else if (currentPhase === 'voting' && currentGameStateRef.current?.memes) {
+            channelRef.current.send({
+              type: 'broadcast',
+              event: 'START_VOTING',
+              payload: {
+                memes: currentGameStateRef.current.memes,
+                voteDuration: currentGameStateRef.current.voteDuration,
+              },
+            })
+          } else if (currentPhase === 'results' && currentGameStateRef.current?.resultsPayload) {
+            channelRef.current.send({
+              type: 'broadcast',
+              event: 'START_RESULTS',
+              payload: currentGameStateRef.current.resultsPayload,
+            })
+          }
+        } catch (e) {
+          console.error('Failed to respond to REQUEST_GAME_STATE:', e)
         }
       })
       .subscribe((status) => {
@@ -1421,6 +1487,9 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
       } catch (e) { /* defaults */ }
       const votingDuration = settings.voting_duration || lobby.voting_duration || 15
 
+      // Cache voting state so REQUEST_GAME_STATE can replay it for reconnecting clients
+      currentGameStateRef.current = { memes, voteDuration: votingDuration }
+
       // Broadcast start of voting phase with the list of memes
       channelRef.current.send({
         type: 'broadcast',
@@ -1637,18 +1706,32 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
         console.error('Failed to update round statistics in DB:', statsErr)
       }
 
+      // Persist results phase to DB so clients who reconnect or miss the broadcast
+      // can detect they should be in 'results' phase via postgres_changes or REQUEST_GAME_STATE
+      try {
+        await updateLobbyStatus(lobby.id, 'results')
+      } catch (e) {
+        console.warn('Failed to update lobby status to results:', e)
+      }
+
+      // Build the results payload
+      const resultsPayload = {
+        players: updatedPlayers,
+        votesData: allVotes,
+        roundWinners: highestPoints > 0 ? winners : [],
+        roundNumber: currentRound,
+        maxRounds: maxRounds,
+        votingMode,
+      }
+
+      // Cache results payload so REQUEST_GAME_STATE can replay it for reconnecting clients
+      currentGameStateRef.current = { resultsPayload }
+
       // Broadcast results
       channelRef.current.send({
         type: 'broadcast',
         event: 'START_RESULTS',
-        payload: {
-          players: updatedPlayers,
-          votesData: allVotes,
-          roundWinners: highestPoints > 0 ? winners : [],
-          roundNumber: currentRound,
-          maxRounds: maxRounds,
-          votingMode,
-        },
+        payload: resultsPayload,
       })
 
       // Run results timer
@@ -1685,6 +1768,13 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
       console.error('Failed to save final game statistics:', err)
     } finally {
       setLoading(false)
+    }
+
+    // Persist ended phase to DB so reconnecting clients know the game is over
+    try {
+      await updateLobbyStatus(lobby.id, 'ended')
+    } catch (e) {
+      console.warn('Failed to update lobby status to ended:', e)
     }
 
     channelRef.current.send({
@@ -1798,6 +1888,71 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submittedPlayers, players.length, isHost, phase])
+
+  // Phase watchdog: periodically verify our local phase matches the DB.
+  // If we missed a broadcast and are stuck on the wrong screen, REQUEST_GAME_STATE
+  // will ask the host to resend the current phase payload.
+  useEffect(() => {
+    if (!channelRef.current) return
+    // Don't run the watchdog if we're the host (we drive the state)
+    if (isHost || isAdmin) return
+
+    const watchdogInterval = setInterval(async () => {
+      try {
+        const { data: lobbyData } = await supabase
+          .from('lobbies')
+          .select('status, current_round')
+          .eq('id', lobby.id)
+          .single()
+
+        if (!lobbyData) return
+        const dbStatus = lobbyData.status
+        const localPhase = phaseRef.current
+
+        // Map db status to expected local phase
+        const isOutOfSync = (
+          (dbStatus === 'voting' && localPhase === 'writing') ||
+          (dbStatus === 'results' && localPhase !== 'results' && localPhase !== 'ended') ||
+          (dbStatus === 'ended' && localPhase !== 'ended') ||
+          (dbStatus === 'writing' && localPhase !== 'writing' &&
+           lobbyData.current_round > currentRoundRef.current)
+        )
+
+        if (isOutOfSync) {
+          console.log(`[Watchdog] DB status "${dbStatus}" != local phase "${localPhase}". Requesting game state...`)
+          if (channelRef.current) {
+            channelRef.current.send({
+              type: 'broadcast',
+              event: 'REQUEST_GAME_STATE',
+              payload: { requesterId: user.id },
+            })
+          }
+        }
+      } catch (e) {
+        // Non-critical, watchdog failures are silent
+      }
+    }, 8000)
+
+    return () => clearInterval(watchdogInterval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHost, isAdmin, lobby.id, user.id])
+
+  // Auto-rejoin: if this user is in the GameScreen component but their player
+  // record was deleted (e.g. by stale cleanup during a slow network), re-insert it.
+  // This mirrors the auto-rejoin mechanism in Lobby.jsx.
+  useEffect(() => {
+    if (players.length === 0) return
+    if (phase === 'ended') return // Game is over, don't auto-rejoin
+
+    const myPlayer = players.find((p) => p.profile_id === user.id)
+    if (!myPlayer) {
+      console.log('[AutoRejoin] Player not found in GameScreen players list. Re-inserting...')
+      joinLobby(lobby.code, user.id).catch((err) => {
+        console.warn('[AutoRejoin] Failed to rejoin:', err)
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [players, user.id, lobby.code, phase])
 
   const handleVote = async (voteValue) => {
     const currentMeme = allMemes[currentMemeIndex]

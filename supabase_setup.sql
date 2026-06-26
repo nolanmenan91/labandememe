@@ -36,7 +36,7 @@ create table if not exists public.lobbies (
   id uuid default gen_random_uuid() primary key,
   code varchar(4) not null unique,
   creator_id uuid references public.profiles(id) on delete cascade not null,
-  status text not null check (status in ('lobby', 'writing', 'voting', 'ended')) default 'lobby',
+  status text not null check (status in ('lobby', 'writing', 'voting', 'results', 'ended')) default 'lobby',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -356,7 +356,7 @@ SECURITY DEFINER
 AS $$
 BEGIN
   DELETE FROM public.players
-  WHERE last_seen_at < now() - INTERVAL '30 seconds';
+  WHERE last_seen_at < now() - INTERVAL '60 seconds';
 END;
 $$;
 

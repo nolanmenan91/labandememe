@@ -126,16 +126,35 @@ export const joinLobby = async (lobbyCode, profileId) => {
     throw new Error('Lobby not found with code: ' + uppercaseCode)
   }
 
-  // Insert player mapping
+  // Check if the player already exists to preserve their score in an ongoing game
+  const { data: existingPlayer } = await supabase
+    .from('players')
+    .select('*')
+    .eq('lobby_id', lobby.id)
+    .eq('profile_id', profileId)
+    .maybeSingle()
+
+  if (existingPlayer) {
+    // Player already exists: only refresh their last_seen_at to mark them as active again
+    // Do NOT reset their score — they are reconnecting mid-game
+    const { data: updatedPlayer, error: updateError } = await supabase
+      .from('players')
+      .update({ last_seen_at: new Date().toISOString(), is_ready: false })
+      .eq('id', existingPlayer.id)
+      .select()
+      .single()
+    if (updateError) throw updateError
+    return { lobby, player: updatedPlayer }
+  }
+
+  // Player doesn't exist yet: insert fresh
   const { data: player, error: playerError } = await supabase
     .from('players')
-    .upsert({
+    .insert({
       lobby_id: lobby.id,
       profile_id: profileId,
       score: 0,
       is_ready: false
-    }, {
-      onConflict: 'lobby_id,profile_id'
     })
     .select()
     .single()
@@ -235,7 +254,19 @@ export const joinOrCreateGlobalLobby = async (profileId) => {
 
   let player = existingPlayer
 
-  if (!player) {
+  if (player) {
+    // Player already exists: refresh their last_seen_at to prevent stale cleanup
+    // Do NOT reset score — preserve their progress in an ongoing game
+    const { data: refreshedPlayer, error: refreshError } = await supabase
+      .from('players')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('id', player.id)
+      .select()
+      .single()
+    if (!refreshError && refreshedPlayer) {
+      player = refreshedPlayer
+    }
+  } else {
     const { data: newPlayer, error: playerError } = await supabase
       .from('players')
       .insert({

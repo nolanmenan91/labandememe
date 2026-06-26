@@ -51,7 +51,7 @@ function AppContent() {
   })
   const [designMode, setDesignMode] = useState(() => {
     const saved = localStorage.getItem('designMode')
-    return (saved === 'retro' || saved === 'minimalist') ? saved : 'retro'
+    return (saved === 'retro' || saved === 'minimalist') ? saved : 'minimalist'
   })
   const [enableCrt, setEnableCrt] = useState(false)
   const [avatarLoading, setAvatarLoading] = useState(false)
@@ -183,15 +183,77 @@ function AppContent() {
 
   // Dashboard / Active game State
   const [activeTab, setActiveTab] = useState('play') // 'play', 'upload', 'moderate'
-  const [activeLobby, setActiveLobby] = useState(null)
+  const [activeLobby, setActiveLobbyState] = useState(null)
   const [activeLobbyPhase, setActiveLobbyPhase] = useState(null)
   const [lobbyError, setLobbyError] = useState('')
   const [lobbyLoading, setLobbyLoading] = useState(false)
   const [onlinePlayers, setOnlinePlayers] = useState([])
+  // Track if we are currently reconnecting from a page refresh
+  const [isReconnecting, setIsReconnecting] = useState(false)
 
-  // Cleanup any existing player record for this user when App mounts or user changes
+  // Wrapper to persist activeLobby in sessionStorage so a page refresh can restore it
+  const setActiveLobby = (lobby) => {
+    setActiveLobbyState(lobby)
+    if (lobby) {
+      sessionStorage.setItem('activeLobbyId', lobby.id)
+    } else {
+      sessionStorage.removeItem('activeLobbyId')
+      sessionStorage.removeItem('isReconnecting')
+    }
+  }
+
+  // On mount: restore activeLobby from sessionStorage if we refreshed mid-game
+  useEffect(() => {
+    if (!user) return
+
+    const savedLobbyId = sessionStorage.getItem('activeLobbyId')
+    if (!savedLobbyId) return
+
+    // We had an active lobby when the page was last loaded — try to reconnect
+    setIsReconnecting(true)
+    const reconnect = async () => {
+      try {
+        const { data: lobby, error } = await supabase
+          .from('lobbies')
+          .select('*')
+          .eq('id', savedLobbyId)
+          .maybeSingle()
+
+        if (error || !lobby) {
+          // Lobby no longer exists
+          sessionStorage.removeItem('activeLobbyId')
+          setIsReconnecting(false)
+          return
+        }
+
+        // Refresh our player record's last_seen_at so we're not cleaned up
+        await supabase
+          .from('players')
+          .update({ last_seen_at: new Date().toISOString() })
+          .eq('lobby_id', lobby.id)
+          .eq('profile_id', user.id)
+
+        setActiveLobbyState(lobby)
+      } catch (err) {
+        console.error('Error reconnecting to lobby:', err)
+        sessionStorage.removeItem('activeLobbyId')
+      } finally {
+        setIsReconnecting(false)
+      }
+    }
+
+    reconnect()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
+  // Cleanup any existing player record for this user when App mounts or user changes,
+  // but ONLY if this is a fresh login (not a page refresh reconnecting to a game).
   useEffect(() => {
     if (!user || activeLobby) return
+    if (isReconnecting) return // Don't clean up while we're in the middle of reconnecting
+
+    const savedLobbyId = sessionStorage.getItem('activeLobbyId')
+    if (savedLobbyId) return // sessionStorage says we had a lobby — wait for reconnect effect
 
     const cleanupOwnStaleRecord = async () => {
       try {
@@ -205,26 +267,19 @@ function AppContent() {
     }
 
     cleanupOwnStaleRecord()
-  }, [user, activeLobby])
+  }, [user, activeLobby, isReconnecting])
 
-  // Handle beforeunload to clean up player row when tab/browser is closed
+  // Handle beforeunload: instead of deleting the player record (which would break page refresh),
+  // we just let the heartbeat system handle cleanup via clean_stale_players after 60 seconds.
+  // On a genuine tab close, the last_seen_at stops updating and the player will be
+  // auto-cleaned by the server-side RPC within ~60 seconds.
+  // We still mark sessionStorage so that a refresh can distinguish itself from a fresh load.
   useEffect(() => {
     if (!activeLobby || !user) return
 
     const handleBeforeUnload = () => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-      if (supabaseUrl && supabaseKey) {
-        const url = `${supabaseUrl}/rest/v1/players?lobby_id=eq.${activeLobby.id}&profile_id=eq.${user.id}`
-        fetch(url, {
-          method: 'DELETE',
-          headers: {
-            'apikey': supabaseKey,
-            'Authorization': `Bearer ${supabaseKey}`,
-          },
-          keepalive: true
-        })
-      }
+      // Keep the sessionStorage marker so refresh knows to reconnect
+      sessionStorage.setItem('activeLobbyId', activeLobby.id)
     }
 
     window.addEventListener('beforeunload', handleBeforeUnload)
@@ -447,6 +502,19 @@ function AppContent() {
         <RetroCrt scanlines={enableCrt} flicker={enableCrt} vignette={enableCrt} />
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
           <p style={{ fontFamily: 'var(--font-press-start)' }}>DÉMARRAGE DE LA CONSOLE...</p>
+        </div>
+      </>
+    )
+  }
+
+  // Reconnecting to active game after page refresh
+  if (isReconnecting) {
+    return (
+      <>
+        <RetroCrt scanlines={enableCrt} flicker={enableCrt} vignette={enableCrt} />
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '16px' }}>
+          <p style={{ fontFamily: 'var(--font-press-start)' }}>RECONNEXION EN COURS...</p>
+          <p style={{ fontFamily: 'var(--font-press-start)', fontSize: '12px', opacity: 0.7 }}>Retour à la partie</p>
         </div>
       </>
     )
