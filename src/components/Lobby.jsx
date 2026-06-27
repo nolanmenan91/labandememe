@@ -40,8 +40,9 @@ export default function Lobby({ lobby, onLeave, onGameStart, onLobbyUpdate, them
     // Check if any connected players are admins (profiles.role === 'creator')
     const adminPlayers = players.filter((p) => p.profiles?.role === 'creator')
     if (adminPlayers.length > 0) {
-      // If there are admins, only admins are hosts
-      return adminPlayers.some((p) => p.profile_id === user.id)
+      // If there are admins, only one admin is the host (the one with the lexicographically smallest profile_id)
+      const sortedAdminPlayers = [...adminPlayers].sort((a, b) => a.profile_id.localeCompare(b.profile_id))
+      return sortedAdminPlayers[0].profile_id === user.id
     }
     // No admins: fallback to lobby creator
     return lobby.creator_id === user.id
@@ -51,7 +52,8 @@ export default function Lobby({ lobby, onLeave, onGameStart, onLobbyUpdate, them
   const getIsPlayerHost = useCallback((player) => {
     const adminPlayers = players.filter((p) => p.profiles?.role === 'creator')
     if (adminPlayers.length > 0) {
-      return player.profiles?.role === 'creator'
+      const sortedAdminPlayers = [...adminPlayers].sort((a, b) => a.profile_id.localeCompare(b.profile_id))
+      return player.profile_id === sortedAdminPlayers[0].profile_id
     }
     return player.profile_id === lobby.creator_id
   }, [players, lobby.creator_id])

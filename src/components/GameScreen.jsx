@@ -859,7 +859,9 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
   const computeIsHost = useCallback(() => {
     const adminPlayers = players.filter(p => p.profiles?.role === 'creator')
     if (adminPlayers.length > 0) {
-      return adminPlayers.some(p => p.profile_id === user.id)
+      // If there are admins, only one admin is the host (the one with the lexicographically smallest profile_id)
+      const sortedAdminPlayers = [...adminPlayers].sort((a, b) => a.profile_id.localeCompare(b.profile_id))
+      return sortedAdminPlayers[0].profile_id === user.id
     }
     return lobby.creator_id === user.id
   }, [players, user.id, lobby.creator_id])
@@ -912,6 +914,48 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
     maxRoundsRef.current = maxRounds
   }, [maxRounds])
 
+  const sendHostCommand = (action, payload = {}) => {
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'HOST_COMMAND',
+        payload: { action, ...payload }
+      })
+    }
+  }
+
+  const handleAdminTransitionToVoting = () => {
+    if (isHost) {
+      transitionToVoting()
+    } else if (isAdmin) {
+      sendHostCommand('TRANSITION_TO_VOTING')
+    }
+  }
+
+  const handleAdminForceEndTimer = () => {
+    if (isHost) {
+      handleForceEndTimer()
+    } else if (isAdmin) {
+      sendHostCommand('FORCE_END_TIMER')
+    }
+  }
+
+  const handleAdminForceNextMeme = () => {
+    if (isHost) {
+      handleHostForceNextMeme()
+    } else if (isAdmin) {
+      sendHostCommand('FORCE_NEXT_MEME')
+    }
+  }
+
+  const handleAdminStartNewRound = () => {
+    if (isHost) {
+      startNewRound()
+    } else if (isAdmin) {
+      sendHostCommand('START_NEW_ROUND')
+    }
+  }
+
   const togglePauseTimer = () => {
     if (!isHostRef.current && !isAdmin) return
     const newPaused = !isTimerPausedRef.current
@@ -928,7 +972,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
   }
 
   const handleForceEndTimer = async () => {
-    if (!isHostRef.current && !isAdmin) return
+    if (!isHostRef.current) return
     if (timerRef.current) clearInterval(timerRef.current)
 
     isTimerPausedRef.current = false
@@ -1074,6 +1118,26 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
       })
       .on('broadcast', { event: 'RESTART_GAME' }, () => {
         onLeave() // return to dashboard/lobby list
+      })
+      .on('broadcast', { event: 'HOST_COMMAND' }, async ({ payload }) => {
+        // Only the actual host executes host commands
+        if (!isHostRef.current) return
+        switch (payload.action) {
+          case 'START_NEW_ROUND':
+            await startNewRound()
+            break
+          case 'TRANSITION_TO_VOTING':
+            await transitionToVoting()
+            break
+          case 'FORCE_END_TIMER':
+            await handleForceEndTimer()
+            break
+          case 'FORCE_NEXT_MEME':
+            handleHostForceNextMeme()
+            break
+          default:
+            break
+        }
       })
       .on(
         'postgres_changes',
@@ -1265,7 +1329,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
             setPlayers(plyrs)
             const adminPlayers = plyrs.filter(p => p.profiles?.role === 'creator')
             const amIHost = adminPlayers.length > 0 
-              ? adminPlayers.some(p => p.profile_id === user.id)
+              ? [...adminPlayers].sort((a, b) => a.profile_id.localeCompare(b.profile_id))[0].profile_id === user.id
               : lobby.creator_id === user.id
 
             if (amIHost && !hostInitializedRef.current) {
@@ -1352,7 +1416,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
   // ============================================================================
 
   async function startNewRound(playersOverride) {
-    if (!isHostRef.current && !isAdmin && !playersOverride) return
+    if (!isHostRef.current && !playersOverride) return
     if (timerRef.current) clearInterval(timerRef.current)
     setLoading(true)
     setErrorMsg('')
@@ -1467,7 +1531,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
   }
 
   async function transitionToVoting() {
-    if (!isHostRef.current && !isAdmin) return
+    if (!isHostRef.current) return
     if (transitioningRef.current) return // Prevent double calls (timer + auto-submit overlap)
     transitioningRef.current = true
     setLoading(true)
@@ -1590,7 +1654,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
   }
 
   const handleHostForceNextMeme = () => {
-    if (!isHostRef.current && !isAdmin) return
+    if (!isHostRef.current) return
     if (timerRef.current) clearInterval(timerRef.current)
 
     const nextIndex = currentMemeIndex + 1
@@ -2052,7 +2116,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                 {(isHost || isAdmin) && (
                   <button
-                    onClick={transitionToVoting}
+                    onClick={handleAdminTransitionToVoting}
                     className="retro-button-danger"
                     style={{
                       fontFamily: 'var(--font-press-start)',
@@ -2101,7 +2165,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                         {isTimerPaused ? '▶ REPRENDRE' : '⏸ PAUSE'}
                       </button>
                       <button
-                        onClick={handleForceEndTimer}
+                        onClick={handleAdminForceEndTimer}
                         style={{
                           fontFamily: 'var(--font-press-start)',
                           fontSize: '9px',
@@ -2246,7 +2310,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
               {(isHost || isAdmin) && (
                 <button
-                  onClick={transitionToVoting}
+                  onClick={handleAdminTransitionToVoting}
                   className="retro-button-danger"
                   style={{
                     fontFamily: 'var(--font-press-start)',
@@ -2295,7 +2359,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                       {isTimerPaused ? '▶ REPRENDRE' : '⏸ PAUSE'}
                     </button>
                     <button
-                      onClick={handleForceEndTimer}
+                      onClick={handleAdminForceEndTimer}
                       style={{
                         fontFamily: 'var(--font-press-start)',
                         fontSize: '9px',
@@ -2701,7 +2765,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                   {(isHost || isAdmin) && (
                     <button
-                      onClick={handleHostForceNextMeme}
+                      onClick={handleAdminForceNextMeme}
                       className="retro-button-danger"
                       style={{
                         fontFamily: 'var(--font-press-start)',
@@ -2750,7 +2814,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                           {isTimerPaused ? '▶ REPRENDRE' : '⏸ PAUSE'}
                         </button>
                         <button
-                          onClick={handleForceEndTimer}
+                          onClick={handleAdminForceEndTimer}
                           style={{
                             fontFamily: 'var(--font-press-start)',
                             fontSize: '9px',
@@ -3026,7 +3090,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                         {isTimerPaused ? '▶ REPRENDRE' : '⏸ PAUSE'}
                       </button>
                       <button
-                        onClick={handleForceEndTimer}
+                        onClick={handleAdminForceEndTimer}
                         style={{
                           fontFamily: 'var(--font-press-start)',
                           fontSize: '9px',
@@ -3275,7 +3339,7 @@ export default function GameScreen({ lobby, onLeave, onLobbyUpdate, theme = 'def
                   </RetroButton>
                 ) : (
                   <>
-                    <RetroButton onClick={() => startNewRound()} theme={theme} className="btn-next-round retro-pulse" style={{ flex: 1 }}>
+                    <RetroButton onClick={handleAdminStartNewRound} theme={theme} className="btn-next-round retro-pulse" style={{ flex: 1 }}>
                       MANCHE SUIVANTE
                     </RetroButton>
                     <RetroButton onClick={handleEndGame} theme={theme} className="btn-leave" style={{ flex: 1 }}>
